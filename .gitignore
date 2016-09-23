@@ -45,3 +45,10 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+
+# Vim
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+Session.vim
+.netrwhist
+tags
