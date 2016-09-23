@@ -150,6 +150,8 @@ target_link_libraries(motionvec ${catkin_LIBRARIES})
 add_executable(forcevec src/SpaceVecAlg/ForceVec.cpp)
 target_link_libraries(forcevec ${catkin_LIBRARIES})
 
+add_executable(rbinertia src/SpaceVecAlg/RBInertia.cpp)
+target_link_libraries(rbinertia ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
