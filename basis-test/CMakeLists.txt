@@ -8,7 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  cmake_modules
 )
+
+find_package(Eigen REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -115,6 +118,8 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  /usr/include/eigen3/
+  /usr/local/include/SpaceVecAlg
 )
 
 ## Declare a C++ library
@@ -138,6 +143,9 @@ include_directories(
 # target_link_libraries(basis-test_node
 #   ${catkin_LIBRARIES}
 # )
+
+add_executable(motionvec src/SpaceVecAlg/MotionVec.cpp)
+target_link_libraries(motionvec ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -186,3 +194,10 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+
+#############
+##  C++11  ##
+#############
+
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
