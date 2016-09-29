@@ -155,6 +155,9 @@ target_link_libraries(rbinertia ${catkin_LIBRARIES})
 
 add_executable(ptransform src/SpaceVecAlg/PTransform.cpp)
 target_link_libraries(ptransform ${catkin_LIBRARIES})
+
+add_executable(utilities src/SpaceVecAlg/Utilities.cpp)
+target_link_libraries(utilities ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
