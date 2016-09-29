@@ -46,5 +46,6 @@ int main(int argc, char **argv)
     
     while (ros::ok()) {
     //    ROS_INFO("check");
+        loop_rate.sleep();
     }
 }

@@ -32,5 +32,6 @@ int main(int argc, char **argv)
     //    ROS_INFO("check");
         std::cout << (fv1+fv2) << std::endl;
         std::cout << (10.*fv1) << std::endl;
+        loop_rate.sleep();
     }
 }

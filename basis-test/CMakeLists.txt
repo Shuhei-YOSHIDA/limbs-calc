@@ -152,6 +152,9 @@ target_link_libraries(forcevec ${catkin_LIBRARIES})
 
 add_executable(rbinertia src/SpaceVecAlg/RBInertia.cpp)
 target_link_libraries(rbinertia ${catkin_LIBRARIES})
+
+add_executable(ptransform src/SpaceVecAlg/PTransform.cpp)
+target_link_libraries(ptransform ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
