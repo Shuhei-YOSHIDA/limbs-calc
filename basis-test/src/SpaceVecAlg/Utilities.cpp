@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 
-#include<SpaceVecAlg> //Summary of header files of SpaceVecAlg
+#include<SpaceVecAlg/SpaceVecAlg> //Summary of header files of SpaceVecAlg
 
 int main(int argc, char **argv)
 {

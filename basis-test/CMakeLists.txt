@@ -119,7 +119,7 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
   /usr/include/eigen3/
-  /usr/local/include/SpaceVecAlg
+  /usr/local/include
 )
 
 ## Declare a C++ library
