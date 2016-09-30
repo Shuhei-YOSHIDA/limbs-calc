@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "rbinertia");
+    ros::init(argc, argv, "ptransform");
     ros::NodeHandle n;
     
     Eigen::Matrix3d E; // rotation

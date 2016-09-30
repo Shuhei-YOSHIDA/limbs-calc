@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "rbinertia");
+    ros::init(argc, argv, "utilities");
     ros::NodeHandle n;
 
     double theta = 0.0;

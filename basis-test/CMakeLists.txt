@@ -158,6 +158,9 @@ target_link_libraries(ptransform ${catkin_LIBRARIES})
 
 add_executable(utilities src/SpaceVecAlg/Utilities.cpp)
 target_link_libraries(utilities ${catkin_LIBRARIES})
+
+add_executable(body src/RBDyn/Body.cpp)
+target_link_libraries(body ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
