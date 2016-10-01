@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 
-#include<RBDyn/Body.h> //Summary of header files of SpaceVecAlg
+#include<RBDyn/Body.h> 
 
 /*
 jorisv/sva_rbdyn_presentationのBodyのサンプルコードは古いみたい．
@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     ros::NodeHandle n;
 
     // int id; // Ver 0.9.0, id is not used?
-    std::string name;
+    std::string name = "name";
 
     Eigen::Vector3d com(1,0,0); //origin to CoM translation
     double mass = 10; //rigid body mass
