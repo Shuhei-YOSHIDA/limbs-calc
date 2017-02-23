@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  urdf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -115,6 +116,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  /usr/include/eigen3
 )
 
 ## Declare a C++ library
@@ -128,16 +130,18 @@ include_directories(
 # add_dependencies(posture-generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(posture-generator_node src/posture-generator_node.cpp)
+add_executable(calcRobot src/calcFromURDF.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(posture-generator_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(calcRobot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(posture-generator_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(calcRobot
+  ${catkin_LIBRARIES}
+  #/usr/lib/libRBDyn.so
+  RBDyn
+)
 
 #############
 ## Install ##
@@ -183,6 +187,10 @@ include_directories(
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
-
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+#############
+##  C++11  ##
+#############
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}") 
