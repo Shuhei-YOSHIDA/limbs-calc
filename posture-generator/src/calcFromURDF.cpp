@@ -19,7 +19,6 @@ bool readUrdf()
     if (!model.initParam("robot_description")) {
         return false;
     }
-    //TODO automatically read graph from urdf::Model
     return true;
 }
 
@@ -51,37 +50,30 @@ void setGraph(LinkConstSharedPtr link)
     auto iner = link->inertial;
     double mass; Vector3d com; Matrix3d Io;
     if (iner ) {
-        cout << "set inertial" << endl;
+        cout << "set inertial of Root link" << endl;
         mass = iner->mass;
-        cout << "set mass" << endl;
         com << iner->origin.position.x, 
                iner->origin.position.y, 
                iner->origin.position.z;
-        cout << "set com" << endl;
         // No rotation may be between joint and CoM frame
         Matrix3d Ic;
         Ic << iner->ixx, iner->ixy, iner->ixz, 
               iner->ixy, iner->iyy, iner->iyz, 
               iner->ixz, iner->iyz, iner->izz;
-        cout << "set Ic" << endl;
         Matrix3d E = Matrix3d::Identity();
         Io = sva::inertiaToOrigin(Ic, mass, com, E);
-        cout << "set Io" << endl;
-
     }
 
     sva::RBInertiad rbi(mass, mass*com, Io);
     rbd::Body rlink(rbi, link->name);
-    cout << "before" << endl;
     mbg.addBody(rlink);
-    cout << "after" << endl;
+    cout << "Root link " << link->name << " is set " << endl;
 
     setMultiBodyGraph(link);
 }
 // Root link is not added to graph. Use root as virtual link or add it otherway
 void setMultiBodyGraph(LinkConstSharedPtr link)
 {
-    //TODO automatically read graph from urdf::Model
     for (std::vector<LinkSharedPtr>::const_iterator child = link->child_links.begin(); child != link->child_links.end(); child++) {
         if (*child) {
             // set body to graph
@@ -104,7 +96,6 @@ void setMultiBodyGraph(LinkConstSharedPtr link)
 
             sva::RBInertiad rbi(mass, mass*com, Io);
             rbd::Body rlink(rbi, (*child)->name);
-            cout << "Set mbg.addBody" << endl;
 
             mbg.addBody(rlink);
 
@@ -134,7 +125,6 @@ void setMultiBodyGraph(LinkConstSharedPtr link)
                 break;
             }
             if (typecheck) {//Otherwise, this code will fail?
-                cout << "Set typecheck" << endl;
                 // add joint to graph and link joint and body
                 rbd::Joint jnt(type, axis, true, joint->name);
                 mbg.addJoint(jnt);
@@ -146,18 +136,12 @@ void setMultiBodyGraph(LinkConstSharedPtr link)
                 sva::PTransformd X_PJ;//parent's link to joint
                 sva::PTransformd X_LJ(sva::PTransformd::Identity());//child's link to joint
                 
-                cout << "Set Ptransformd" << endl;
-                cout << "Set " << link->name << ", " << (*child)->name << ", " << joint->name << endl;
                 //Root Link is added before this method
                 mbg.linkBodies(link->name, X_PJ, 
                                (*child)->name, X_LJ, 
                                joint->name);
-                cout << "Set linkBodies" << endl;
             }
-            else {
-
-            }
-            std::cout << (*child)->name << std::endl;
+            std::cout << (*child)->name << " is set"  << std::endl;
             // next generation
             setMultiBodyGraph(*child);
         }
@@ -166,15 +150,6 @@ void setMultiBodyGraph(LinkConstSharedPtr link)
     
     return;  
 }
-
-
-
-
-
-
-
-
-
 
 int main (int argc, char** argv)
 {
