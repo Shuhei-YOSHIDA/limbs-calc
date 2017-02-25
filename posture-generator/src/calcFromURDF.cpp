@@ -9,7 +9,9 @@
 #include <RBDyn/FD.h>
 #include <RBDyn/CoM.h>
 
+using namespace Eigen;
 using namespace urdf;
+using namespace std;
 Model model;
 
 bool readUrdf()
@@ -40,13 +42,129 @@ void treeParse(LinkConstSharedPtr link, int level = 0)
 
 }
 
-rbd::MultiBodyGraph mbd;
-bool setMultiBodyGraph()
+rbd::MultiBodyGraph mbg;
+void setMultiBodyGraph(LinkConstSharedPtr link);
+void setGraph(LinkConstSharedPtr link)
 {
-    //TODO automatically read graph from urdf::Model
+    cout << "set graph" << endl;
+    //set Root link
+    auto iner = link->inertial;
+    double mass; Vector3d com; Matrix3d Io;
+    if (iner ) {
+        cout << "set inertial" << endl;
+        mass = iner->mass;
+        cout << "set mass" << endl;
+        com << iner->origin.position.x, 
+               iner->origin.position.y, 
+               iner->origin.position.z;
+        cout << "set com" << endl;
+        // No rotation may be between joint and CoM frame
+        Matrix3d Ic;
+        Ic << iner->ixx, iner->ixy, iner->ixz, 
+              iner->ixy, iner->iyy, iner->iyz, 
+              iner->ixz, iner->iyz, iner->izz;
+        cout << "set Ic" << endl;
+        Matrix3d E = Matrix3d::Identity();
+        Io = sva::inertiaToOrigin(Ic, mass, com, E);
+        cout << "set Io" << endl;
+
+    }
+
+    sva::RBInertiad rbi(mass, mass*com, Io);
+    rbd::Body rlink(rbi, link->name);
+    cout << "before" << endl;
+    mbg.addBody(rlink);
+    cout << "after" << endl;
+
+    setMultiBodyGraph(link);
+}
+// Root link is not added to graph. Use root as virtual link or add it otherway
+void setMultiBodyGraph(LinkConstSharedPtr link)
+{
+    //TODO automatically read graph from urdf::Model
+    for (std::vector<LinkSharedPtr>::const_iterator child = link->child_links.begin(); child != link->child_links.end(); child++) {
+        if (*child) {
+            // set body to graph
+            auto iner = (*child)->inertial;
+            double mass; Vector3d com; Matrix3d Io;
+            if (iner) {
+                mass = iner->mass;
+                com << iner->origin.position.x, 
+                       iner->origin.position.y, 
+                       iner->origin.position.z;
+                // tensor at CoM for URDF is converted to at Origin(Joint frame?)
+                // No rotation may be between joint and CoM frame
+                Matrix3d Ic;
+                Ic << iner->ixx, iner->ixy, iner->ixz, 
+                      iner->ixy, iner->iyy, iner->iyz, 
+                      iner->ixz, iner->iyz, iner->izz;
+                Matrix3d E = Matrix3d::Identity();
+                Io = sva::inertiaToOrigin(Ic, mass, com, E);
+            }// If added body's inertia is null, what occur?
+
+            sva::RBInertiad rbi(mass, mass*com, Io);
+            rbd::Body rlink(rbi, (*child)->name);
+            cout << "Set mbg.addBody" << endl;
+
+            mbg.addBody(rlink);
+
+            // set joint(to parent) to graph
+            auto joint = (*child)->parent_joint;
+            
+            rbd::Joint::Type type;
+            Vector3d axis;
+            bool typecheck = true;
+            switch (joint->type) { //urdf joint define
+                case Joint::REVOLUTE: {
+                    type = rbd::Joint::Rev;
+                    axis << joint->axis.x, joint->axis.y, joint->axis.z;
+                }
+                break;
+                case Joint::FIXED: {
+                    type = rbd::Joint::Fixed;
+                    axis = Vector3d::UnitZ();
+                }
+                break;
+                case Joint::FLOATING: //No Joint?
+                    type = rbd::Joint::Free; //Perhaps, only Free rotation?
+                    axis = Vector3d::UnitZ();
+                break;
+                default:
+                    typecheck = false;
+                break;
+            }
+            if (typecheck) {//Otherwise, this code will fail?
+                cout << "Set typecheck" << endl;
+                // add joint to graph and link joint and body
+                rbd::Joint jnt(type, axis, true, joint->name);
+                mbg.addJoint(jnt);
+                auto pToj = joint->parent_to_joint_origin_transform;
+                Vector3d r_pj(pToj.position.x, pToj.position.y, pToj.position.z);
+                Quaterniond q_pj(pToj.rotation.w, pToj.rotation.x, pToj.rotation.y, pToj.rotation.z);
+
+                //sva::PTransformd X_PJ(q_pj, r_pj);//parent's link to joint
+                sva::PTransformd X_PJ;//parent's link to joint
+                sva::PTransformd X_LJ(sva::PTransformd::Identity());//child's link to joint
+                
+                cout << "Set Ptransformd" << endl;
+                cout << "Set " << link->name << ", " << (*child)->name << ", " << joint->name << endl;
+                //Root Link is added before this method
+                mbg.linkBodies(link->name, X_PJ, 
+                               (*child)->name, X_LJ, 
+                               joint->name);
+                cout << "Set linkBodies" << endl;
+            }
+            else {
+
+            }
+            std::cout << (*child)->name << std::endl;
+            // next generation
+            setMultiBodyGraph(*child);
+        }
+    }
+   
     
-    
-    return true;  
+    return;  
 }
 
 
@@ -66,6 +184,8 @@ int main (int argc, char** argv)
     readUrdf();
     LinkConstSharedPtr root_link = model.getRoot();
     treeParse(root_link);
+    setGraph(root_link);
+    cout << "graph is already set" << endl;
 
     ros::spin();
 

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(posture-generator)
+set(CMAKE_BUILD_TYPE Debug)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
