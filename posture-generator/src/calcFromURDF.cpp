@@ -116,8 +116,8 @@ void setMultiBodyGraph(LinkConstSharedPtr link)
                     axis = Vector3d::UnitZ();
                 }
                 break;
-                case Joint::FLOATING: //No Joint?
-                    type = rbd::Joint::Free; //Perhaps, only Free rotation?
+                case Joint::FLOATING: 
+                    type = rbd::Joint::Free;
                     axis = Vector3d::UnitZ();
                 break;
                 default:
