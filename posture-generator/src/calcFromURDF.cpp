@@ -9,10 +9,15 @@
 #include <RBDyn/FD.h>
 #include <RBDyn/CoM.h>
 
+//for compatibility of indigo and kinetic
+#include <memory>
+typedef boost::shared_ptr<urdf::Link> _LinkSharedPtr;
+typedef boost::shared_ptr<const urdf::Link> _LinkConstSharedPtr;
 using namespace Eigen;
 using namespace urdf;
 using namespace std;
 Model model;
+
 
 bool readUrdf()
 {
@@ -22,11 +27,11 @@ bool readUrdf()
     return true;
 }
 
-void treeParse(LinkConstSharedPtr link, int level = 0)
+void treeParse(_LinkConstSharedPtr link, int level = 0)
 {
     level+=2;//for indent
     int count = 0;
-    for (std::vector<LinkSharedPtr>::const_iterator child = link->child_links.begin(); child != link->child_links.end(); child++) {
+    for (std::vector<_LinkSharedPtr>::const_iterator child = link->child_links.begin(); child != link->child_links.end(); child++) {
         if (*child) {
             for (int j=0;j<level;j++) std::cout <<"  ";//indent
             std::cout << "child(" << (count++)+1 << "): " << (*child)->name << std::endl;
@@ -42,8 +47,8 @@ void treeParse(LinkConstSharedPtr link, int level = 0)
 }
 
 rbd::MultiBodyGraph mbg;
-void setMultiBodyGraph(LinkConstSharedPtr link);
-void setGraph(LinkConstSharedPtr link)
+void setMultiBodyGraph(_LinkConstSharedPtr link);
+void setGraph(_LinkConstSharedPtr link)
 {
     cout << "set graph" << endl;
     //set Root link
@@ -72,9 +77,9 @@ void setGraph(LinkConstSharedPtr link)
     setMultiBodyGraph(link);
 }
 // Root link is not added to graph. Use root as virtual link or add it otherway
-void setMultiBodyGraph(LinkConstSharedPtr link)
+void setMultiBodyGraph(_LinkConstSharedPtr link)
 {
-    for (std::vector<LinkSharedPtr>::const_iterator child = link->child_links.begin(); child != link->child_links.end(); child++) {
+    for (std::vector<_LinkSharedPtr>::const_iterator child = link->child_links.begin(); child != link->child_links.end(); child++) {
         if (*child) {
             // set body to graph
             auto iner = (*child)->inertial;
@@ -151,17 +156,40 @@ void setMultiBodyGraph(LinkConstSharedPtr link)
     return;  
 }
 
+void sample1()
+{
+    // Make rbd::MultiBody instance to use some function such as kinematics
+    // MakeMultiBody("base link name", joint type from world to base link
+    rbd::MultiBody mb = mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
+
+    // Make rbd::MultiBodyConfig instance, which include configuration
+    rbd::MultiBodyConfig mbc(mb);
+    mbc.zero(mb);
+    // Order of variable is same as joint order
+    int count = 0;
+    for (auto itr = mbc.q.begin(); itr != mbc.q.end(); ++itr) {
+        cout << mb.joint(count).name();
+        // access config vector q of joint(count)
+        for (auto itr2 = itr->begin(); itr2 != itr->end(); ++itr2) {
+            cout << ", " << *itr2;
+        }
+        cout << ":" << endl;
+        count++;
+    }
+}
+
 int main (int argc, char** argv)
 {
     ros::init(argc, argv, "multiLinkCalc");
     ros::NodeHandle n;
     
     readUrdf();
-    LinkConstSharedPtr root_link = model.getRoot();
+    _LinkConstSharedPtr root_link = model.getRoot();
     treeParse(root_link);
     setGraph(root_link);
     cout << "graph is already set" << endl;
 
+    sample1();
     ros::spin();
 
     return 0;
