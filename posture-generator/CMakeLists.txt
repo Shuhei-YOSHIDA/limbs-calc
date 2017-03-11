@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   urdf
   sensor_msgs
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -133,15 +134,21 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(calcRobot src/calcFromURDF.cpp)
+add_executable(calcRobot2 src/calcFromURDF2.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(calcRobot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(calcRobot2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(calcRobot
   ${catkin_LIBRARIES}
-  #/usr/lib/libRBDyn.so
+  RBDyn
+)
+
+target_link_libraries(calcRobot2
+  ${catkin_LIBRARIES}
   RBDyn
 )
 
