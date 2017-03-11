@@ -4,10 +4,10 @@
 #include <RBDyn/MultiBodyGraph.h>
 #include <RBDyn/MultiBodyConfig.h>
 #include <RBDyn/FK.h>
-//#include <RBDyn/FV.h>
-//#include <RBDyn/ID.h>
-//#include <RBDyn/FD.h>
-//#include <RBDyn/CoM.h>
+#include <RBDyn/FV.h>
+#include <RBDyn/ID.h>
+#include <RBDyn/FD.h>
+#include <RBDyn/CoM.h>
 
 #include <sensor_msgs/JointState.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -23,6 +23,21 @@ using namespace urdf;
 using namespace std;
 Model model;
 
+class task {// interface class
+    
+    public:
+        virtual ~task(){};
+        virtual VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc) = 0;
+        virtual MatrixXd J(rbd::MultiBody mb, rbd::MultiBodyConfig mbc) = 0;
+};
+
+class BodyTask : public task {
+
+    public:
+        BodyTask(){};
+        VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc);
+        MatrixXd J(rbd::MultiBody mb, rbd::MultiBodyConfig mbc);
+};
 
 bool readUrdf()
 {
@@ -165,7 +180,6 @@ void setMultiBodyGraph(_LinkConstSharedPtr link)
                 Quaterniond q_pj(pToj.rotation.w, pToj.rotation.x, pToj.rotation.y, pToj.rotation.z);
 
                 sva::PTransformd X_PJ(q_pj, r_pj);//parent's link to joint
-                //sva::PTransformd X_PJ;//parent's link to joint
                 sva::PTransformd X_LJ(sva::PTransformd::Identity());//child's link to joint
                 
                 //Root Link is added before this method

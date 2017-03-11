@@ -135,11 +135,13 @@ include_directories(
 ## Declare a C++ executable
 add_executable(calcRobot src/calcFromURDF.cpp)
 add_executable(calcRobot2 src/calcFromURDF2.cpp)
+add_executable(calcRobot3 src/calcFromURDF3.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(calcRobot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(calcRobot2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(calcRobot3 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(calcRobot
@@ -152,6 +154,10 @@ target_link_libraries(calcRobot2
   RBDyn
 )
 
+target_link_libraries(calcRobot3
+  ${catkin_LIBRARIES}
+  RBDyn
+)
 #############
 ## Install ##
 #############
