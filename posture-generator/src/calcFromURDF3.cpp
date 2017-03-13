@@ -99,11 +99,13 @@ public:
         sva::PTransformd X_O_p = this->X_O_p(mbc);
         // Set transformation in Oringin orientation frame
         sva::PTransformd X_O_p_0 = sva::PTransformd(X_O_p.rotation()).inv() * X_O_p;
-        MatrixXd jac_mat_dense = _jac.jacobian(mb, mbc, X_O_p_0);
+        MatrixXd jac_mat_dense = _jac.jacobian(mb, mbc, X_O_p_0); // おかしい？
         _jac.fullJacobian(mb, jac_mat_dense, _jac_mat_sparse);
         //check
         cout << "Xop transltation " << endl << X_O_p.translation() << endl
              << "Xop rotation " << endl << X_O_p.rotation() << endl;
+        cout << "Xop0 transltation " << endl << X_O_p_0.translation() << endl
+             << "Xop0 rotation " << endl << X_O_p_0.rotation() << endl;
         cout << "dense " << endl
              << jac_mat_dense << endl;
         cout << "task.J " << endl;
@@ -122,45 +124,48 @@ public:
 void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig mbc, Task &task,
             double delta = 1.0, unsigned int maxIter = 100, double prec = 1e-8)
 {
-auto q = rbd::paramToVector(mb, mbc.q);
-unsigned int iterate = 0;
-bool minimizer = false;
-while (iterate < maxIter && !minimizer) {
-    // compute task data
-    auto g = task.g(mb, mbc);
-    auto J = task.J(mb, mbc);
+    auto q = rbd::paramToVector(mb, mbc.q);
+    cout << "first q " << endl << q.transpose() << endl;
+
+    unsigned int iterate = 0;
+    bool minimizer = false;
+    while (iterate < maxIter && !minimizer) {
+        // compute task data
+        auto g = task.g(mb, mbc);
+        auto J = task.J(mb, mbc);
+        
+        // compute alpha
+        // J*alpha = -g
+        VectorXd alpha;
+        alpha = -PseudoInverse(J, 1e-9)*g;//least square ?
+        // above calc is nan ...
     
-    // compute alpha
-    // J*alpha = -g
-    VectorXd alpha = -PseudoInverse(J)*g;//least square ?
-    // above calc is nan ...
-
-    // integrate and run the forward kinematic
-    mbc.alpha = rbd::vectorToDof(mb, alpha);
-    rbd::eulerIntegration(mb, mbc, delta);
-    rbd::forwardKinematics(mb, mbc);
-
-    // take the new q vector
-    q = rbd::paramToVector(mb, mbc.q);
-
-    //H-infinite norm?
-    auto alphaInf = alpha.lpNorm<Infinity>();
-
-    // yield the current state
-    cout << " --------------------------- " << endl;
-    cout << "iterate " << iterate << endl
-         << "q " << endl << q.transpose() << endl
-         << "alpha " << alpha.transpose() << endl 
-         << "alphainf " << alphaInf << endl;
-    cout << "g " << endl << g << endl;
-    cout << "J " << endl << J << endl;
-    cout << " --------------------------- " << endl;
-    //check
-    //cout << "iterate " << iterate << endl;
-
-    // check if the current alpha is a minimizer
-    if (alphaInf < prec) minimizer = true;
-    iterate++;
+        // integrate and run the forward kinematic
+        mbc.alpha = rbd::vectorToDof(mb, alpha);
+        rbd::eulerIntegration(mb, mbc, delta);
+        rbd::forwardKinematics(mb, mbc);
+    
+        // take the new q vector
+        q = rbd::paramToVector(mb, mbc.q);
+    
+        //H-infinite norm?
+        auto alphaInf = alpha.lpNorm<Infinity>();
+    
+        // yield the current state
+        cout << " --------------------------- " << endl;
+        cout << "iterate " << iterate << endl
+             << "q " << endl << q.transpose() << endl
+             << "alpha " << alpha.transpose() << endl 
+             << "alphainf " << alphaInf << endl;
+        cout << "g " << endl << g << endl;
+        cout << "J " << endl << J << endl;
+        cout << " --------------------------- " << endl;
+        //check
+        //cout << "iterate " << iterate << endl;
+    
+        // check if the current alpha is a minimizer
+        if (alphaInf < prec) minimizer = true;
+        iterate++;
 }
 }
 
@@ -378,6 +383,7 @@ void sample4()
     cout << "mbc q size is " << mbcIK.q.size() << endl;
     cout << "FK " << endl;
     rbd::forwardKinematics(mb, mbcIK);
+    rbd::forwardVelocity(mb, mbcIK);//For motionSubspace
 
 
     sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/2), Vector3d(0.5, 0.5, 0.5));
