@@ -375,7 +375,7 @@ for (auto itr = mbc.bodyPosW.begin(); itr != mbc.bodyPosW.end(); ++itr) {
 msgFromMultiBodyConfig(mb, mbc, jmsg);
 }
 
-void sample4()
+void sample4(visualization_msgs::MarkerArray &amsg)
 {
     rbd::MultiBody mb = mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
     rbd::MultiBodyConfig mbcIK(mb);
@@ -394,6 +394,22 @@ void sample4()
     auto mbcIKSolve = rbd::MultiBodyConfig(mbcIK);
     oneTaskMin(mb, mbcIKSolve, *bodytask);
 
+    //marker
+    visualization_msgs::Marker mrk;
+    mrk.header.frame_id = "base_link";
+    mrk.pose.position.x = X_O_T.translation()(0);
+    mrk.pose.position.y = X_O_T.translation()(1);
+    mrk.pose.position.z = X_O_T.translation()(2);
+    auto q = Eigen::Quaterniond(X_O_T.rotation());
+    mrk.pose.orientation.x = q.x();
+    mrk.pose.orientation.y = q.y();
+    mrk.pose.orientation.z = q.z();
+    mrk.pose.orientation.w = -q.w();
+    mrk.id = 0;
+    mrk.type = visualization_msgs::Marker::ARROW;
+    mrk.scale.x = 0.1; mrk.scale.y = 0.01; mrk.scale.z = 0.01;
+    mrk.color.r = 0.5; mrk.color.g = 0.0; mrk.color.b = 0.0; mrk.color.a = 0.5; 
+    amsg.markers.push_back(mrk);
 }
 
 int main (int argc, char** argv)
@@ -410,7 +426,13 @@ int main (int argc, char** argv)
     cout << "graph is already set" << endl;
 
     cout << "sample4" << endl;
-    sample4();
+    visualization_msgs::MarkerArray amsg;
+    sample4(amsg);
+    while (ros::ok()) {
+        amsg.markers[0].header.stamp = ros::Time::now();
+        a_pub.publish(amsg);
+        ros::Duration(0.1).sleep();
+    }
     
     cout << "end " << endl;
 
