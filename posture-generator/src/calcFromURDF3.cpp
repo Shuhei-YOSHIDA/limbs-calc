@@ -36,6 +36,9 @@ public:
     virtual MatrixXd J(rbd::MultiBody mb, rbd::MultiBodyConfig mbc) = 0;
 };
 
+typedef boost::shared_ptr<Task> TaskPtr;
+typedef std::vector<pair<double, TaskPtr>> MultiTaskPtr;//priority and Task
+
 class BodyTask : public Task {
 
 public:
@@ -55,8 +58,7 @@ public:
         _X_O_T = X_O_T;
         _X_b_p = X_b_p;
         _jac = rbd::Jacobian(mb, bodyName);
-        //_jac_mat_sparse = MatrixXd(6, mb.nrDof()).zeros();
-        _jac_mat_sparse = MatrixXd::Zero(6, mb.nrDof());
+        _jac_mat_sparse = MatrixXd::Zero(6, mb.nrDof());//mb.nrParams?
         //check
         cout << "body name is " << _bodyName << endl;
         cout << "bodyindes is " << _bodyIndex << endl;
@@ -68,6 +70,7 @@ public:
 
 
     }
+
     sva::PTransformd X_O_p(rbd::MultiBodyConfig mbc) 
     {
         //check
@@ -83,6 +86,7 @@ public:
              << "localxoprot " << endl << xop.rotation() << endl;
         return xop; 
     }
+
     virtual VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
     {
         //check
@@ -94,6 +98,7 @@ public:
         cout << g_body.vector() << endl;
         return g_body.vector();
     }
+
     virtual MatrixXd J(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
     {
         sva::PTransformd X_O_p = this->X_O_p(mbc);
@@ -121,24 +126,67 @@ public:
 
 };
 
-void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc, Task &task,
-            double delta = 1.0, unsigned int maxIter = 100, double prec = 1e-8)
+class PostureTask : public Task {
+
+public:
+    PostureTask(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
+    {
+        _q_T = mbc; //need only one reference articular position vector
+
+        //use joint type: prism, rev and Sperical
+        auto isDefine =[](rbd::Joint j) { 
+            if (j.type() == rbd::Joint::Prism || 
+                j.type() == rbd::Joint::Rev   ||
+                j.type() == rbd::Joint::Spherical) return true;
+            else return false;
+        };
+        
+        // take back joint and joint index that are define
+        auto alljoints = mb.joints();
+        int count = 0;
+        for (auto itr = alljoints.begin(); itr != alljoints.end(); ++itr) {
+            if (isDefine(*itr)) {
+                _jointIndex.push_back(count);
+                _joints.push_back(*itr);
+            }
+            count++;
+        }
+    }
+
+    virtual VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
+    {
+
+    }
+
+    virtual MatrixXd J(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
+    {
+
+    }
+
+
+    std::vector<unsigned int> _jointIndex;
+    std::vector<rbd::Joint> _joints;
+    rbd::MultiBodyConfig _q_T; //?
+    MatrixXd  _J_mat;
+};
+
+void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc, TaskPtr task,
+                double delta = 1.0, unsigned int maxIter = 100, double prec = 1e-8)
 {
     auto q = rbd::paramToVector(mb, mbc.q);
-    cout << "first q " << endl << q.transpose() << endl;
-
     unsigned int iterate = 0;
     bool minimizer = false;
     while (iterate < maxIter && !minimizer) {
         // compute task data
-        auto g = task.g(mb, mbc);
-        auto J = task.J(mb, mbc);
+        //auto g = task.g(mb, mbc);
+        //auto J = task.J(mb, mbc);
+        auto g = task->g(mb, mbc);
+        auto J = task->J(mb, mbc);
         
         // compute alpha
         // J*alpha = -g
         VectorXd alpha;
         alpha = -PseudoInverse(J, 1e-9)*g;//least square ?
-        // above calc is nan ...
     
         // integrate and run the forward kinematic
         mbc.alpha = rbd::vectorToDof(mb, alpha);
@@ -160,13 +208,68 @@ void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc, Task &task,
         cout << "g " << endl << g << endl;
         cout << "J " << endl << J << endl;
         cout << " --------------------------- " << endl;
-        //check
-        //cout << "iterate " << iterate << endl;
     
         // check if the current alpha is a minimizer
         if (alphaInf < prec) minimizer = true;
         iterate++;
+    }
 }
+
+void manyTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc, MultiTaskPtr tasks, 
+                 double delta = 1.0, unsigned int maxIter = 100, double prec = 1e-8)
+{
+    auto q = rbd::paramToVector(mb, mbc.q);
+    unsigned int iterate = 0;
+    bool minimizer = false;
+    while (iterate < maxIter && !minimizer) {
+        // compute task data such as w*g, w*J
+        //std::vector<VectorXd> gList;
+        //std::vector<MatrixXd> JList;
+        int height = tasks.size();
+        int width = mb.nrDof(); 
+        VectorXd g(6*height);
+        MatrixXd J(6*height, width);
+        int count = 0;
+        for (auto itr = tasks.begin(); itr != tasks.end(); ++itr) {
+            VectorXd gi = itr->first * itr->second->g(mb, mbc);
+            MatrixXd Ji = itr->first * itr->second->J(mb, mbc);
+            //gList.push_back(gi);
+            //JList.push_back(Ji);
+            g.segment(count*6, (count+1)*6) = g;
+            J.block(count*6, 0, 6, width) = J;
+            count++;
+        }
+        
+        // compute alpha
+        // J*alpha = -g
+        VectorXd alpha;
+        alpha = -PseudoInverse(J, 1e-9)*g;//least square ?
+
+        // integrate and run the forward kinematics
+        mbc.alpha = rbd::vectorToDof(mb, alpha);
+        rbd::eulerIntegration(mb, mbc, delta);
+        rbd::forwardKinematics(mb, mbc);
+
+        // take the new q vector
+        q = rbd::paramToVector(mb, mbc.q);
+    
+        //H-infinite norm?
+        auto alphaInf = alpha.lpNorm<Infinity>();
+
+        // yield the current state
+        cout << " --------------------------- " << endl;
+        cout << "iterate " << iterate << endl
+             << "q " << endl << q.transpose() << endl
+             << "alpha " << alpha.transpose() << endl 
+             << "alphainf " << alphaInf << endl;
+        cout << "g " << endl << g << endl;
+        cout << "J " << endl << J << endl;
+        cout << " --------------------------- " << endl;
+
+        // check if the current alpha is a minimizer
+        if (alphaInf < prec) minimizer = true;
+        iterate++;
+    }
 }
 
 bool readUrdf()
@@ -329,54 +432,6 @@ for (std::vector<_LinkSharedPtr>::const_iterator child = link->child_links.begin
 return;  
 }
 
-
-
-void sample3(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &amsg)
-{
-    rbd::MultiBody mb = mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
-    rbd::MultiBodyConfig mbc(mb);
-    std::random_device rnd;
-    std::mt19937 mt(rnd());
-    std::uniform_int_distribution<int> ranj(0,100);
-    for (auto itr = mbc.q.begin(); itr != mbc.q.end(); ++itr) {
-        for (auto itr2 = itr->begin(); itr2 != itr->end(); ++itr2) {
-            *itr2 = ranj(mt)/100.0; 
-            //*itr2 = 0.0; 
-        }
-    }
-    
-    rbd::forwardKinematics(mb, mbc);
-    int count = 0;
-    auto stamp = ros::Time::now();
-    for (auto itr = mbc.bodyPosW.begin(); itr != mbc.bodyPosW.end(); ++itr) {
-        //cout << mb.body(count).name() << endl;
-        //cout << "transration" << endl << itr->translation() << endl;
-        //cout << "rotation" << endl << itr->rotation() << endl;
-    
-        visualization_msgs::Marker mrk;
-        mrk.header.stamp = stamp;
-        mrk.header.frame_id = "base_link";
-        mrk.id = count;
-        mrk.text = mb.body(count).name();
-        mrk.type = visualization_msgs::Marker::ARROW;
-        mrk.pose.position.x = itr->translation()(0);
-        mrk.pose.position.y = itr->translation()(1);
-        mrk.pose.position.z = itr->translation()(2);
-        auto q = Eigen::Quaterniond(itr->rotation());
-        mrk.pose.orientation.x = q.x();
-        mrk.pose.orientation.y = q.y();
-        mrk.pose.orientation.z = q.z();
-        mrk.pose.orientation.w = -q.w();//Consistency for TF
-        mrk.scale.x = 0.1; mrk.scale.y = 0.01; mrk.scale.z = 0.01;
-        mrk.color.r = 0.5; mrk.color.g = 0.0; mrk.color.b = 0.0; mrk.color.a = 0.5; 
-        amsg.markers.push_back(mrk);
-    
-        count++;
-}
-
-msgFromMultiBodyConfig(mb, mbc, jmsg);
-}
-
 void sample4(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &amsg)
 {
     rbd::MultiBody mb = mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
@@ -388,14 +443,17 @@ void sample4(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &ams
     rbd::forwardVelocity(mb, mbcIK);//For motionSubspace
 
 
+    //Unreachable
     //sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/2), Vector3d(0.5, 0.5, 0.5));
+    //Reachable
     sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/4), Vector3d(0.3, 0.1, 0.0));
-    Task *bodytask = new BodyTask(mb, "r_wrist", X_O_T);
+    //Task *bodytask = new BodyTask(mb, "r_wrist", X_O_T);
+    TaskPtr bodytask(new BodyTask(mb, "r_wrist", X_O_T));
 
     //calculation
     // copy the initial configuration to avoid the algorithm to change it
     rbd::MultiBodyConfig mbcIKSolve = rbd::MultiBodyConfig(mbcIK);
-    oneTaskMin(mb, mbcIKSolve, *bodytask);
+    oneTaskMin(mb, mbcIKSolve, bodytask);
 
     //marker
     visualization_msgs::Marker mrk;
