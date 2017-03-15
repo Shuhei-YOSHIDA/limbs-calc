@@ -121,7 +121,7 @@ public:
 
 };
 
-void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig mbc, Task &task,
+void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc, Task &task,
             double delta = 1.0, unsigned int maxIter = 100, double prec = 1e-8)
 {
     auto q = rbd::paramToVector(mb, mbc.q);
@@ -171,43 +171,45 @@ void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig mbc, Task &task,
 
 bool readUrdf()
 {
-if (!model.initParam("robot_description")) {
-    return false;
-}
-return true;
+    if (!model.initParam("robot_description")) {
+        return false;
+    }
+    return true;
 }
 
 void treeParse(_LinkConstSharedPtr link, int level = 0)
 {
-level+=2;//for indent
-int count = 0;
-for (std::vector<_LinkSharedPtr>::const_iterator child = link->child_links.begin(); child != link->child_links.end(); child++) {
-    if (*child) {
-        for (int j=0;j<level;j++) std::cout <<"  ";//indent
-        std::cout << "child(" << (count++)+1 << "): " << (*child)->name << std::endl;
-        // next generation
-        treeParse(*child, level);
-    }
-    else { // In case of end link, this part does not processed?
-        for (int j=0;j<level;j++) std::cout <<"  ";//indent
-        std::cout << "root link: " << link->name << "has no child " << *child << std::endl;
-    }
+    level+=2;//for indent
+    int count = 0;
+    for (std::vector<_LinkSharedPtr>::const_iterator child = link->child_links.begin(); child != link->child_links.end(); child++) {
+        if (*child) {
+            for (int j=0;j<level;j++) std::cout <<"  ";//indent
+            std::cout << "child(" << (count++)+1 << "): " << (*child)->name << std::endl;
+            // next generation
+            treeParse(*child, level);
+        }
+        else { // In case of end link, this part does not processed?
+            for (int j=0;j<level;j++) std::cout <<"  ";//indent
+            std::cout << "root link: " << link->name << "has no child " << *child << std::endl;
+        }
 }
 }
 
 void msgFromMultiBodyConfig(rbd::MultiBody mb, rbd::MultiBodyConfig mbc, sensor_msgs::JointState& msg)
 {
-//int rbd::MultiBody::sBodyIndexByName(name)
-//int rbd::MultiBody::sJointIndexByName(name)
-//sensor_msgs::JointState msg;
-int count = 0;
-for (auto itr = mbc.q.begin(); itr != mbc.q.end(); ++itr) {
-    if (mb.joint(count).type() == rbd::Joint::Type::Rev ||
-        mb.joint(count).type() == rbd::Joint::Type::Prism) {// 1dof joint
-        msg.name.push_back(mb.joint(count).name());
-        msg.position.push_back(*(itr->begin()));
-    } 
-    count++;
+    //int rbd::MultiBody::sBodyIndexByName(name)
+    //int rbd::MultiBody::sJointIndexByName(name)
+    //sensor_msgs::JointState msg;
+    int count = 0;
+    for (auto itr = mbc.q.begin(); itr != mbc.q.end(); ++itr) {
+        if (mb.joint(count).type() == rbd::Joint::Type::Rev ||
+            mb.joint(count).type() == rbd::Joint::Type::Prism) {// 1dof joint
+            msg.name.push_back(mb.joint(count).name());
+            msg.position.push_back(*(itr->begin()));
+            //check
+            cout << mb.joint(count).name() << " is " << *(itr->begin()) << endl;
+        } 
+        count++;
 }
 msg.header.stamp = ros::Time::now();
 }
@@ -331,51 +333,51 @@ return;
 
 void sample3(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &amsg)
 {
-rbd::MultiBody mb = mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
-rbd::MultiBodyConfig mbc(mb);
-std::random_device rnd;
-std::mt19937 mt(rnd());
-std::uniform_int_distribution<int> ranj(0,100);
-for (auto itr = mbc.q.begin(); itr != mbc.q.end(); ++itr) {
-    for (auto itr2 = itr->begin(); itr2 != itr->end(); ++itr2) {
-        *itr2 = ranj(mt)/100.0; 
-        //*itr2 = 0.0; 
+    rbd::MultiBody mb = mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
+    rbd::MultiBodyConfig mbc(mb);
+    std::random_device rnd;
+    std::mt19937 mt(rnd());
+    std::uniform_int_distribution<int> ranj(0,100);
+    for (auto itr = mbc.q.begin(); itr != mbc.q.end(); ++itr) {
+        for (auto itr2 = itr->begin(); itr2 != itr->end(); ++itr2) {
+            *itr2 = ranj(mt)/100.0; 
+            //*itr2 = 0.0; 
+        }
     }
-}
-
-rbd::forwardKinematics(mb, mbc);
-int count = 0;
-auto stamp = ros::Time::now();
-for (auto itr = mbc.bodyPosW.begin(); itr != mbc.bodyPosW.end(); ++itr) {
-    //cout << mb.body(count).name() << endl;
-    //cout << "transration" << endl << itr->translation() << endl;
-    //cout << "rotation" << endl << itr->rotation() << endl;
-
-    visualization_msgs::Marker mrk;
-    mrk.header.stamp = stamp;
-    mrk.header.frame_id = "base_link";
-    mrk.id = count;
-    mrk.text = mb.body(count).name();
-    mrk.type = visualization_msgs::Marker::ARROW;
-    mrk.pose.position.x = itr->translation()(0);
-    mrk.pose.position.y = itr->translation()(1);
-    mrk.pose.position.z = itr->translation()(2);
-    auto q = Eigen::Quaterniond(itr->rotation());
-    mrk.pose.orientation.x = q.x();
-    mrk.pose.orientation.y = q.y();
-    mrk.pose.orientation.z = q.z();
-    mrk.pose.orientation.w = -q.w();//Consistency for TF
-    mrk.scale.x = 0.1; mrk.scale.y = 0.01; mrk.scale.z = 0.01;
-    mrk.color.r = 0.5; mrk.color.g = 0.0; mrk.color.b = 0.0; mrk.color.a = 0.5; 
-    amsg.markers.push_back(mrk);
-
-    count++;
+    
+    rbd::forwardKinematics(mb, mbc);
+    int count = 0;
+    auto stamp = ros::Time::now();
+    for (auto itr = mbc.bodyPosW.begin(); itr != mbc.bodyPosW.end(); ++itr) {
+        //cout << mb.body(count).name() << endl;
+        //cout << "transration" << endl << itr->translation() << endl;
+        //cout << "rotation" << endl << itr->rotation() << endl;
+    
+        visualization_msgs::Marker mrk;
+        mrk.header.stamp = stamp;
+        mrk.header.frame_id = "base_link";
+        mrk.id = count;
+        mrk.text = mb.body(count).name();
+        mrk.type = visualization_msgs::Marker::ARROW;
+        mrk.pose.position.x = itr->translation()(0);
+        mrk.pose.position.y = itr->translation()(1);
+        mrk.pose.position.z = itr->translation()(2);
+        auto q = Eigen::Quaterniond(itr->rotation());
+        mrk.pose.orientation.x = q.x();
+        mrk.pose.orientation.y = q.y();
+        mrk.pose.orientation.z = q.z();
+        mrk.pose.orientation.w = -q.w();//Consistency for TF
+        mrk.scale.x = 0.1; mrk.scale.y = 0.01; mrk.scale.z = 0.01;
+        mrk.color.r = 0.5; mrk.color.g = 0.0; mrk.color.b = 0.0; mrk.color.a = 0.5; 
+        amsg.markers.push_back(mrk);
+    
+        count++;
 }
 
 msgFromMultiBodyConfig(mb, mbc, jmsg);
 }
 
-void sample4(visualization_msgs::MarkerArray &amsg)
+void sample4(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &amsg)
 {
     rbd::MultiBody mb = mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
     rbd::MultiBodyConfig mbcIK(mb);
@@ -386,12 +388,13 @@ void sample4(visualization_msgs::MarkerArray &amsg)
     rbd::forwardVelocity(mb, mbcIK);//For motionSubspace
 
 
-    sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/2), Vector3d(0.5, 0.5, 0.5));
+    //sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/2), Vector3d(0.5, 0.5, 0.5));
+    sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/4), Vector3d(0.3, 0.1, 0.0));
     Task *bodytask = new BodyTask(mb, "r_wrist", X_O_T);
 
     //calculation
     // copy the initial configuration to avoid the algorithm to change it
-    auto mbcIKSolve = rbd::MultiBodyConfig(mbcIK);
+    rbd::MultiBodyConfig mbcIKSolve = rbd::MultiBodyConfig(mbcIK);
     oneTaskMin(mb, mbcIKSolve, *bodytask);
 
     //marker
@@ -410,6 +413,9 @@ void sample4(visualization_msgs::MarkerArray &amsg)
     mrk.scale.x = 0.1; mrk.scale.y = 0.01; mrk.scale.z = 0.01;
     mrk.color.r = 0.5; mrk.color.g = 0.0; mrk.color.b = 0.0; mrk.color.a = 0.5; 
     amsg.markers.push_back(mrk);
+
+    //joint state
+    msgFromMultiBodyConfig(mb, mbcIKSolve, jmsg);
 }
 
 int main (int argc, char** argv)
@@ -427,10 +433,13 @@ int main (int argc, char** argv)
 
     cout << "sample4" << endl;
     visualization_msgs::MarkerArray amsg;
-    sample4(amsg);
+    sensor_msgs::JointState jmsg;
+    sample4(jmsg, amsg);
     while (ros::ok()) {
         amsg.markers[0].header.stamp = ros::Time::now();
+        jmsg.header.stamp = ros::Time::now();
         a_pub.publish(amsg);
+        j_pub.publish(jmsg);
         ros::Duration(0.1).sleep();
     }
     

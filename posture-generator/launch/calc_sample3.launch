@@ -2,9 +2,11 @@
     <param name="robot_description" command="$(find xacro)/xacro --inorder $(find romeo_description)/urdf/romeo_generated_urdf/romeo_robot.xacro" />
     <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen"/>
 
+    <!--
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" respawn="false" output="screen" >
         <param name="use_gui" value="true"/>
     </node>
+    -->
 
     <node name="calc_robot3" pkg="posture-generator" type="calcRobot3" output="screen" />
     <node name="$(anon rviz)"  pkg="rviz" type="rviz" respawn="false" 
