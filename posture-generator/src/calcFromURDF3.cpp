@@ -151,6 +151,25 @@ public:
             }
             count++;
         }
+        int nrDof = 0;
+        for (auto itr = _joints.begin(); itr != _joints.end(); ++itr) {
+            nrDof += itr->dof();
+        }
+
+        // initialize g
+        _g_mat = VectorXd::Zero(nrDof);
+
+        // initialize the jacobian
+        _J_mat = MatrixXd::Zero(nrDof, mb.nrDof());
+        unsigned int posInG = 0;
+        count = 0;
+        for (auto itr = _joints.begin(); itr != _joints.end(); ++itr) {
+            unsigned int posInDof = mb.jointPosInDof(_jointIndex[count]);
+            _J_mat.block(posInG, posInDof, itr->dof(), itr->dof()) = 
+                MatrixXd::Identity(itr->dof(), itr->dof());
+            posInG += itr->dof();
+            count++;
+        }
     }
 
     virtual VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
@@ -167,7 +186,8 @@ public:
     std::vector<unsigned int> _jointIndex;
     std::vector<rbd::Joint> _joints;
     rbd::MultiBodyConfig _q_T; //?
-    MatrixXd  _J_mat;
+    VectorXd _g_mat;
+    MatrixXd _J_mat;
 };
 
 void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc, TaskPtr task,
