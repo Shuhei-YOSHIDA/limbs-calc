@@ -60,13 +60,13 @@ public:
         _jac = rbd::Jacobian(mb, bodyName);
         _jac_mat_sparse = MatrixXd::Zero(6, mb.nrDof());//mb.nrParams?
         //check
-        cout << "body name is " << _bodyName << endl;
-        cout << "bodyindes is " << _bodyIndex << endl;
-        cout << "XOT translation " << endl << _X_O_T.translation() << endl
-             << "XOT rotation " << endl << _X_O_T.rotation() << endl;
-        cout << "xbp translation " << endl << _X_b_p.translation() << endl
-             << "xbp rotation " << endl << _X_b_p.rotation() << endl;
-        cout << "jac_mat_dense " << _jac_mat_sparse << endl;
+        //cout << "body name is " << _bodyName << endl;
+        //cout << "bodyindes is " << _bodyIndex << endl;
+        //cout << "XOT translation " << endl << _X_O_T.translation() << endl
+        //     << "XOT rotation " << endl << _X_O_T.rotation() << endl;
+        //cout << "xbp translation " << endl << _X_b_p.translation() << endl
+        //     << "xbp rotation " << endl << _X_b_p.rotation() << endl;
+        //cout << "jac_mat_dense " << _jac_mat_sparse << endl;
 
 
     }
@@ -74,28 +74,28 @@ public:
     sva::PTransformd X_O_p(rbd::MultiBodyConfig mbc) 
     {
         //check
-        cout << "calc xop" << endl;
-        cout << "size " << mbc.bodyPosW.size() << endl;
+        //cout << "calc xop" << endl;
+        //cout << "size " << mbc.bodyPosW.size() << endl;
         sva::PTransformd X_O_b(mbc.bodyPosW[_bodyIndex]); //Segmentation  fault!!!
-        cout << "xop..." << endl;
+        //cout << "xop..." << endl;
         sva::PTransformd xop = _X_b_p * X_O_b;
         //check
-        cout << "localxobtra " << endl << X_O_b.translation() << endl
-             << "localxobrot " << endl << X_O_b.rotation() << endl;
-        cout << "localxoptra " << endl << xop.translation() << endl
-             << "localxoprot " << endl << xop.rotation() << endl;
+        //cout << "localxobtra " << endl << X_O_b.translation() << endl
+        //     << "localxobrot " << endl << X_O_b.rotation() << endl;
+        //cout << "localxoptra " << endl << xop.translation() << endl
+        //     << "localxoprot " << endl << xop.rotation() << endl;
         return xop; 
     }
 
     virtual VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
     {
         //check
-        cout << "calc g" << endl;
+        //cout << "calc g" << endl;
         auto X_O_p = this->X_O_p(mbc);
         auto g_body = sva::transformError(_X_O_T, X_O_p);//MotionVec
         //check
-        cout << "task.g " << endl;
-        cout << g_body.vector() << endl;
+        //cout << "task.g " << endl;
+        //cout << g_body.vector() << endl;
         return g_body.vector();
     }
 
@@ -107,14 +107,14 @@ public:
         MatrixXd jac_mat_dense = _jac.jacobian(mb, mbc, X_O_p_0); // おかしい？
         _jac.fullJacobian(mb, jac_mat_dense, _jac_mat_sparse);
         //check
-        cout << "Xop transltation " << endl << X_O_p.translation() << endl
-             << "Xop rotation " << endl << X_O_p.rotation() << endl;
-        cout << "Xop0 transltation " << endl << X_O_p_0.translation() << endl
-             << "Xop0 rotation " << endl << X_O_p_0.rotation() << endl;
-        cout << "dense " << endl
-             << jac_mat_dense << endl;
-        cout << "task.J " << endl;
-        cout << _jac_mat_sparse << endl;
+        //cout << "Xop transltation " << endl << X_O_p.translation() << endl
+        //     << "Xop rotation " << endl << X_O_p.rotation() << endl;
+        //cout << "Xop0 transltation " << endl << X_O_p_0.translation() << endl
+        //     << "Xop0 rotation " << endl << X_O_p_0.rotation() << endl;
+        //cout << "dense " << endl
+        //     << jac_mat_dense << endl;
+        //cout << "task.J " << endl;
+        //cout << _jac_mat_sparse << endl;
         return _jac_mat_sparse;
     }
     string _bodyName;
@@ -174,12 +174,41 @@ public:
 
     virtual VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
     {
+        auto q = mbc.q; 
+        auto jointConfig = mbc.jointConfig;
+        unsigned int posInG = 0;
+        int count = 0;
+        cout << "posture->g" << endl;
+        for (auto itr = _joints.begin(); itr != _joints.end(); ++itr) {
+            int jIndex = _jointIndex[count];
+            if (itr->type() == rbd::Joint::Prism || itr->type() == rbd::Joint::Rev) {
+                //rev and prism joints returns 1 as dof() //risky code?
+                cout << "segment prism or rev " << itr->name()  
+                     << " dof is " << itr->dof() 
+                     << " jIndex is " << jIndex 
+                     << " q[index] size is " << q[jIndex].size()<<  endl;
+                VectorXd tmp(itr->dof()); tmp << q[jIndex][0] - _q_T.q[jIndex][0];
+                _g_mat.segment(posInG, itr->dof()) = tmp; 
+            }
+            else if (itr->type() == rbd::Joint::Spherical) {
+                cout << "segment spherical " << itr->name() << endl;
+                // spherical joint returns quaternion //risky code?
+                auto orid = Quaterniond(_q_T.q[jIndex][0], _q_T.q[jIndex][1], 
+                                        _q_T.q[jIndex][2], _q_T.q[jIndex][3]).inverse().matrix();
+                // spherical joint returns 3 as dof() //risky code?
+                _g_mat.segment(posInG, itr->dof()) = 
+                    sva::rotationError(orid, jointConfig[jIndex].rotation());
+            }
 
+            posInG+=itr->dof();
+            count++;
+        }
+        return _g_mat;
     }
 
     virtual MatrixXd J(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)
     {
-
+        return _J_mat;
     }
 
 
@@ -198,25 +227,27 @@ void oneTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc, TaskPtr task,
     bool minimizer = false;
     while (iterate < maxIter && !minimizer) {
         // compute task data
-        //auto g = task.g(mb, mbc);
-        //auto J = task.J(mb, mbc);
         auto g = task->g(mb, mbc);
         auto J = task->J(mb, mbc);
         
         // compute alpha
         // J*alpha = -g
+        cout << "alpha calc" << endl;
         VectorXd alpha;
         alpha = -PseudoInverse(J, 1e-9)*g;//least square ?
     
         // integrate and run the forward kinematic
+        cout << "integration calc" << endl;
         mbc.alpha = rbd::vectorToDof(mb, alpha);
         rbd::eulerIntegration(mb, mbc, delta);
         rbd::forwardKinematics(mb, mbc);
     
         // take the new q vector
+        cout << "new q vector calc" << endl;
         q = rbd::paramToVector(mb, mbc.q);
     
         //H-infinite norm?
+        cout << "infinite norm calc" << endl;
         auto alphaInf = alpha.lpNorm<Infinity>();
     
         // yield the current state
@@ -243,22 +274,47 @@ void manyTaskMin(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc, MultiTaskPtr task
     bool minimizer = false;
     while (iterate < maxIter && !minimizer) {
         // compute task data such as w*g, w*J
-        //std::vector<VectorXd> gList;
-        //std::vector<MatrixXd> JList;
-        int height = tasks.size();
-        int width = mb.nrDof(); 
-        VectorXd g(6*height);
-        MatrixXd J(6*height, width);
+        std::vector<VectorXd> gList;
+        std::vector<MatrixXd> JList;
         int count = 0;
+        int height = 0;
         for (auto itr = tasks.begin(); itr != tasks.end(); ++itr) {
             VectorXd gi = itr->first * itr->second->g(mb, mbc);
             MatrixXd Ji = itr->first * itr->second->J(mb, mbc);
-            //gList.push_back(gi);
-            //JList.push_back(Ji);
-            g.segment(count*6, (count+1)*6) = g;
-            J.block(count*6, 0, 6, width) = J;
+
+            //test check
+            for (double var : vector<double>(gi.data(), gi.data()+gi.size())) {
+                if (std::isnan(var)) {
+                    cout << "gi nan " << endl;
+                    while(1);
+                }
+            }
+            for (double var : vector<double>(Ji.data(), Ji.data()+Ji.size())) {
+                if (std::isnan(var)) {
+                    cout << "Ji nan " << endl;
+                    while(1);
+                }
+            }
+            gList.push_back(gi);
+            JList.push_back(Ji);
+            height+=gi.size();//Ji.rows == gi.rows
             count++;
         }
+        //concatinate gList, JList
+        int width = mb.nrDof(); 
+        VectorXd g(height);
+        MatrixXd J(height, width);
+        int len = 0;
+        for (auto itr = gList.begin(); itr != gList.end(); ++itr) {
+            g.segment(len, itr->size()) = *itr;
+            len+=itr->size();
+        }
+        len = 0;
+        for (auto itr = JList.begin(); itr != JList.end(); ++itr) {
+            J.block(len, 0, itr->rows(), width) = *itr;
+            len+=itr->rows();
+        }
+
         
         // compute alpha
         // J*alpha = -g
@@ -496,6 +552,84 @@ void sample4(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &ams
     msgFromMultiBodyConfig(mb, mbcIKSolve, jmsg);
 }
 
+void sample5(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &amsg)
+{
+    rbd::MultiBody mb = mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
+    rbd::MultiBodyConfig mbcIK(mb);
+    rbd::MultiBodyConfig mbcIKSolve = rbd::MultiBodyConfig(mbcIK);
+    //mbcIK.zero(mb);
+    std::random_device rnd;
+    std::mt19937 mt(rnd());
+    std::uniform_int_distribution<int> ranj(0,100);
+    for (auto itr = mbcIK.q.begin(); itr != mbcIK.q.end(); ++itr) {
+        for (auto itr2 = itr->begin(); itr2 != itr->end(); ++itr2) {
+            *itr2 = ranj(mt)/100.0; 
+        }
+    }
+    rbd::forwardKinematics(mb, mbcIK);
+    rbd::forwardVelocity(mb, mbcIK);//For motionSubspace
+
+    //BodyTask
+    sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/4), Vector3d(0.3, 0.1, 0.0));
+    TaskPtr bodytask(new BodyTask(mb, "r_wrist", X_O_T));
+    //PostureTask
+    TaskPtr posturetask(new PostureTask(mb, mbcIK));
+
+    //calculation
+    //Each task should have Consistency
+    MultiTaskPtr tasks;
+    //tasks.push_back(pair<double, TaskPtr>(10000000, bodytask));
+    tasks.push_back(pair<double, TaskPtr>(1.0, posturetask));
+    manyTaskMin(mb, mbcIKSolve, tasks, 1.0, 200);
+
+    //marker
+    visualization_msgs::Marker mrk;
+    mrk.header.frame_id = "base_link";
+    mrk.pose.position.x = X_O_T.translation()(0);
+    mrk.pose.position.y = X_O_T.translation()(1);
+    mrk.pose.position.z = X_O_T.translation()(2);
+    auto q = Eigen::Quaterniond(X_O_T.rotation());
+    mrk.pose.orientation.x = q.x();
+    mrk.pose.orientation.y = q.y();
+    mrk.pose.orientation.z = q.z();
+    mrk.pose.orientation.w = -q.w();
+    mrk.id = 0;
+    mrk.type = visualization_msgs::Marker::ARROW;
+    mrk.scale.x = 0.1; mrk.scale.y = 0.01; mrk.scale.z = 0.01;
+    mrk.color.r = 0.5; mrk.color.g = 0.0; mrk.color.b = 0.0; mrk.color.a = 0.5;
+    amsg.markers.push_back(mrk);
+
+    //Target posture 
+    int count = 0;
+    auto stamp = ros::Time::now();
+    for (auto itr = mbcIK.bodyPosW.begin(); itr != mbcIK.bodyPosW.end(); ++itr) {
+        visualization_msgs::Marker mrk;
+        mrk.header.stamp = stamp;
+        mrk.header.frame_id = "base_link";
+        mrk.id = count;
+        mrk.text = mb.body(count).name();
+        mrk.type = visualization_msgs::Marker::ARROW;
+        mrk.pose.position.x = itr->translation()(0);
+        mrk.pose.position.y = itr->translation()(1);
+        mrk.pose.position.z = itr->translation()(2);
+        auto q = Eigen::Quaterniond(itr->rotation());
+        mrk.pose.orientation.x = q.x();
+        mrk.pose.orientation.y = q.y();
+        mrk.pose.orientation.z = q.z();
+        mrk.pose.orientation.w = -q.w();//Consistency for TF
+        mrk.scale.x = 0.1; mrk.scale.y = 0.01; mrk.scale.z = 0.01;
+        mrk.color.r = 0.0; mrk.color.g = 0.8; mrk.color.b = 0.0; mrk.color.a = 0.5; 
+        amsg.markers.push_back(mrk);
+
+        count++;
+    }
+
+
+
+    //joint state
+    msgFromMultiBodyConfig(mb, mbcIKSolve, jmsg);
+}
+
 int main (int argc, char** argv)
 {
     ros::init(argc, argv, "multiLinkCalc3");
@@ -509,16 +643,29 @@ int main (int argc, char** argv)
     setGraph(root_link);
     cout << "graph is already set" << endl;
 
-    cout << "sample4" << endl;
-    visualization_msgs::MarkerArray amsg;
-    sensor_msgs::JointState jmsg;
-    sample4(jmsg, amsg);
+    visualization_msgs::MarkerArray amsg, amsg2;
+    sensor_msgs::JointState jmsg, jmsg2;
+    //sample4(jmsg, amsg);
+    sample5(jmsg2, amsg2);
     while (ros::ok()) {
-        amsg.markers[0].header.stamp = ros::Time::now();
-        jmsg.header.stamp = ros::Time::now();
-        a_pub.publish(amsg);
-        j_pub.publish(jmsg);
-        ros::Duration(0.1).sleep();
+        //cout << "sample4" << endl;
+        //for (int i = 0; i < 50; i++) {
+        //    amsg.markers[0].header.stamp = ros::Time::now();
+        //    jmsg.header.stamp = ros::Time::now();
+        //    a_pub.publish(amsg);
+        //    j_pub.publish(jmsg);
+        //    ros::Duration(0.1).sleep();
+        //}
+
+        cout << "sample5" << endl;
+        for (int i = 0; i < 50; i++) {
+            for (auto itr = amsg2.markers.begin(); itr != amsg2.markers.end(); ++itr)
+                itr->header.stamp = ros::Time::now();
+            jmsg2.header.stamp = ros::Time::now();
+            a_pub.publish(amsg2);
+            j_pub.publish(jmsg2);
+            ros::Duration(0.1).sleep();
+        }
     }
     
     cout << "end " << endl;
