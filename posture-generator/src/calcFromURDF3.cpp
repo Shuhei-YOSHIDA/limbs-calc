@@ -494,7 +494,7 @@ for (std::vector<_LinkSharedPtr>::const_iterator child = link->child_links.begin
             Vector3d r_pj(pToj.position.x, pToj.position.y, pToj.position.z);
             Quaterniond q_pj(pToj.rotation.w, pToj.rotation.x, pToj.rotation.y, pToj.rotation.z);
 
-            sva::PTransformd X_PJ(q_pj, r_pj);//parent's link to joint
+            sva::PTransformd X_PJ(q_pj.inverse(), r_pj);//parent's link to joint
             sva::PTransformd X_LJ(sva::PTransformd::Identity());//child's link to joint
             
             //Root Link is added before this method
