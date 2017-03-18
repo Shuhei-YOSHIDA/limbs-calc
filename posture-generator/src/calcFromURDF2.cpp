@@ -142,7 +142,6 @@ void setMultiBodyGraph(_LinkConstSharedPtr link)
                     axis << joint->axis.x, joint->axis.y, joint->axis.z;
                 }
                 break;
-
                 case Joint::FIXED: {
                     type = rbd::Joint::Fixed;
                     axis = Vector3d::UnitZ();
