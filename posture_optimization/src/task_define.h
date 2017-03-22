@@ -1,6 +1,10 @@
 #pragma once
+#include <Eigen/Core>
 #include <RBDyn/MultiBody.h>
 #include <RBDyn/MultiBodyConfig.h>
+#include <RBDyn/Jacobian.h>
+using namespace std;
+using namespace Eigen;
 
 class Task {// interface class
 
@@ -9,6 +13,7 @@ public:
     virtual VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc) = 0;
     virtual MatrixXd J(rbd::MultiBody mb, rbd::MultiBodyConfig mbc) = 0;
     string _name;
+    string _type;
 };
 
 typedef boost::shared_ptr<Task> TaskPtr;
@@ -35,6 +40,7 @@ public:
         _X_b_p = X_b_p;
         _jac = rbd::Jacobian(mb, bodyName);
         _jac_mat_sparse = MatrixXd::Zero(6, mb.nrDof());//mb.nrParams?
+        _type = "BodyTask";
     }
 
     sva::PTransformd X_O_p(rbd::MultiBodyConfig mbc) 
@@ -114,6 +120,8 @@ public:
             posInG += itr->dof();
             count++;
         }
+        
+        _type = "PostureTask";
     }
 
     virtual VectorXd g(rbd::MultiBody mb, rbd::MultiBodyConfig mbc)

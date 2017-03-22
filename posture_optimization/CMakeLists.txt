@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -106,7 +106,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES posture_optimization
 #  CATKIN_DEPENDS roscpp rospy std_msgs
- DEPENDS Eigen3
+DEPENDS Eigen3 roboptim-core
 )
 
 ###########
@@ -137,7 +137,7 @@ add_executable(sample1 src/sample1.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(sample1 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(sample1 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} roboptim-core roboptim-trajectory)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(sample1
@@ -145,6 +145,7 @@ target_link_libraries(sample1
   RBDyn
   RBDynUrdf
   roboptim-core
+  roboptim-trajectory
 )
 
 #############
