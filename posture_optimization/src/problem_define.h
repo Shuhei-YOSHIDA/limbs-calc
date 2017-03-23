@@ -9,6 +9,7 @@
 #include <RBDyn/MultiBody.h>
 #include <RBDyn/MultiBodyConfig.h>
 #include <RBDyn/FK.h>
+#include <RBDyn/FV.h>
 #include "task_define.h"
 
 /*
@@ -29,6 +30,7 @@ struct F : public DifferentiableFunction
     {
         _nrDof = nrDof;
         _mb = mb;
+        cout << "_nrdof is " << _nrDof << endl;
     }
 
     // Keep consistency:impl_compute, impl_gradient, impl_hessian
@@ -43,12 +45,19 @@ struct F : public DifferentiableFunction
         for (auto task : _tasks) {
             double err;
             rbd::MultiBodyConfig mbc = xToMBC(xq);
+            //cout << " value check" << endl;
+            //for (auto itr = mbc.q.begin(); itr != mbc.q.end(); itr++) {
+            //    for (auto itr2 = itr->begin(); itr2 != itr->end(); itr2++) {
+            //        cout << *itr2 << ", ";
+            //    }
+            //}
             // pre-prosess
             if (task.second->_type == "PostureTask") {
                 err = task.second->g(_mb, mbc).squaredNorm() * task.first;
             }
             else if (task.second->_type == "BodyTask") {
                 rbd::forwardKinematics(_mb, mbc); // For bodyPosW
+                rbd::forwardVelocity(_mb, mbc); // For motionSubSpace
                 err = task.second->g(_mb, mbc).squaredNorm() * task.first;
             }
             //else if (force task)
@@ -59,6 +68,12 @@ struct F : public DifferentiableFunction
             // calc evaluation
             result[0]+=err;
         }
+        cout << "x ";
+        for (int i = 0; i < x.size(); i++) {
+            cout << x;
+        }
+        cout << endl;
+        cout << "com " << result[0] << endl;
 
     }
 
@@ -81,8 +96,9 @@ struct F : public DifferentiableFunction
             }
             else if (task.second->_type == "BodyTask") {
                 rbd::forwardKinematics(_mb, mbc); // For bodyPosW
+                rbd::forwardVelocity(_mb, mbc); // For motionSubSpace
                 diff = task.second->J(_mb, mbc).transpose() * 
-                    task.second->g(_mb, mbc).transpose() * task.first * 2;
+                    task.second->g(_mb, mbc) * task.first * 2;
             }
             //else if (force task)
             else {
@@ -93,6 +109,12 @@ struct F : public DifferentiableFunction
             all+=diff;
         }
         grad = all;
+        cout << "x ";
+        for (int i = 0; i < x.size(); i++) {
+            cout << x;
+        }
+        cout << endl;
+        cout << "grad " << all << endl;
     }
 
     //void impl_hessian (hessian_ref h, const_argument_ref x, size_type) const

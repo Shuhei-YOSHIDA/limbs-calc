@@ -3,6 +3,7 @@
 #include <RBDynUrdf/Reader.h> //github repository:jorisv/RBDynUrdf
 #include <RBDyn/FK.h>
 #include "problem_define.h"
+#include <random>
 
 using namespace std;
 using namespace rbdyn_urdf;
@@ -21,12 +22,27 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
     //rbd::MultiBody mb = robotData.mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
     //rbd::MultiBodyConfig mbc(mb);
     mbc.zero(mb);
+    rbd::forwardKinematics(mb, mbc);
+    rbd::forwardVelocity(mb, mbc);
+
+    //BodyTask
+    sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/4), Vector3d(0.3, 0.1, 0.0));
+    TaskPtr bodytask(new BodyTask(mb, "r_wrist", X_O_T));
+    //PostureTask
+    TaskPtr posturetask(new PostureTask(mb, mbc));
+    MultiTaskPtr tasks;
+    //tasks.push_back(pair<double, TaskPtr>(10000000, bodytask));
+    tasks.push_back(pair<double, TaskPtr>(10., bodytask));
+    //tasks.push_back(pair<double, TaskPtr>(1.0, posturetask));
+
+
 
     //optimization
     typedef Solver<EigenMatrixDense> solver_t;
 
     //Create cost function
     boost::shared_ptr<F> f(new F(mb.nrDof(), mb));
+    f->_tasks = tasks;
 
     //Create problem
     solver_t::problem_t pb(f);
@@ -41,7 +57,14 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
 
     //Set the starting point
     Function::vector_t start(pb.function().inputSize());
-    start = VectorXd(pb.function().inputSize());
+    //start = VectorXd(pb.function().inputSize());
+    //start = Function::vector_t::Ones(pb.function().inputSize());
+    std::random_device rnd;
+    std::mt19937 mt(rnd());
+    std::uniform_int_distribution<int> ranj(0,100);
+    for (int i = 0; i < start.size(); i++) {
+        start[i] = ranj(mt)/100.0;
+    }
     pb.startingPoint() = start;
 
     //Create constraints
@@ -52,54 +75,54 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
     // - Eigen: "eigen-levenberg-marquardt"
     // etc.
     //The plugin is built for a given solver type, so choose it adequately
-    //SolverFactory<solver_t> factory("ipopt", pb);
-    //solver_t& solver = factory();
+    SolverFactory<solver_t> factory("ipopt", pb);
+    solver_t& solver = factory();
 
     //Compute the minimum and retrieve the result
     std::cout << "solver minimum " << std::endl;
-    //solver_t::result_t res = solver.minimum();
+    solver_t::result_t res = solver.minimum();
 
     //Display solver information
-    //cout << solver << endl;
+    cout << solver << endl;
 
     //Check in the minimization has succeeded
     //Process the result
-    //switch (res.which()) {
-    //    case solver_t::SOLVER_VALUE:
-    //    {
-    //        //Get the result.
-    //        Result& result = boost::get<Result>(res);
-    //        //Display the result
-    //        cout << "A solution has been found: " << endl
-    //             << result << endl;
-    //    }
-    //    break;
-    //    case solver_t::SOLVER_VALUE_WARNINGS:
-    //    {
-    //        //Get the result
-    //        ResultWithWarnings& result = boost::get<ResultWithWarnings>(res);
-    //        //Display the result
-    //        cout << "A solution with warnings has been found: " << endl
-    //             << result << endl;
-    //    }
-    //    break;
-    //    case solver_t::SOLVER_NO_SOLUTION:
-    //    {
-    //        cout << "A solution should have been found. Failing ... " 
-    //             << endl << boost::get<SolverError>(res).what()
-    //             << endl;
-    //        return false; 
-    //    }
-    //    break;
-    //    case solver_t::SOLVER_ERROR:
-    //    {
-    //        cout << "SOLVER_ERROR occured. Failing ... " 
-    //             << endl << boost::get<SolverError>(res).what()
-    //             << endl;
-    //        return false;
-    //    }
-    //    break;
-    //}
+    switch (res.which()) {
+        case solver_t::SOLVER_VALUE:
+        {
+            //Get the result.
+            Result& result = boost::get<Result>(res);
+            //Display the result
+            cout << "A solution has been found: " << endl
+                 << result << endl;
+        }
+        break;
+        case solver_t::SOLVER_VALUE_WARNINGS:
+        {
+            //Get the result
+            ResultWithWarnings& result = boost::get<ResultWithWarnings>(res);
+            //Display the result
+            cout << "A solution with warnings has been found: " << endl
+                 << result << endl;
+        }
+        break;
+        case solver_t::SOLVER_NO_SOLUTION:
+        {
+            cout << "A solution should have been found. Failing ... " 
+                 << endl << boost::get<SolverError>(res).what()
+                 << endl;
+            return false; 
+        }
+        break;
+        case solver_t::SOLVER_ERROR:
+        {
+            cout << "SOLVER_ERROR occured. Failing ... " 
+                 << endl << boost::get<SolverError>(res).what()
+                 << endl;
+            return false;
+        }
+        break;
+    }
 
     //get results
     rbd::forwardKinematics(mb, mbc);
@@ -131,8 +154,8 @@ int main(int argc, char** argv)
     rbd::MultiBodyConfig mbc(mb);
 
     //sample1(jmsg, amsg);
-    sample1(mb, mbc);
-    while(ros::ok()) {
+    bool res = sample1(mb, mbc);
+    while(res && ros::ok()) {
         JointStateFromMBC(mb, mbc, jmsg);
         MarkerArrayFromMBC(mb, mbc, amsg);
         j_pub.publish(jmsg);
@@ -140,6 +163,7 @@ int main(int argc, char** argv)
 
         ros::Duration(1.0).sleep();
     }
+    cout << "end " << endl;
     
     return 0;
 }
