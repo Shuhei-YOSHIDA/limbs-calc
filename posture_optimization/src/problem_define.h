@@ -31,12 +31,32 @@ struct F : public DifferentiableFunction
         _nrDof = nrDof;
         _mb = mb;
         cout << "_nrdof is " << _nrDof << endl;
+
+        //For length of q:x
+        //use joint type: prism, rev and Sperical
+        auto isDefine =[](rbd::Joint j) { 
+            if (j.type() == rbd::Joint::Prism || 
+                j.type() == rbd::Joint::Rev   ||
+                j.type() == rbd::Joint::Spherical) return true;
+            else return false;
+        };
+        
+        // take back joint and joint index that are define
+        auto alljoints = mb.joints();
+        int count = 0;
+        for (auto itr = alljoints.begin(); itr != alljoints.end(); ++itr) {
+            if (isDefine(*itr)) {
+                _jointIndex.push_back(count);
+                _joints.push_back(*itr);
+            }
+            count++;
+        }
     }
 
     // Keep consistency:impl_compute, impl_gradient, impl_hessian
     void impl_compute (result_ref result, const_argument_ref x) const
     {
-        //result[0] = 0.5*(x[0]*x[0] + x[1]*x[1] + x[2]*x[2] + x[3]*x[3]); 
+        cout << "impl_compute" << endl;
         //calc by using task-ptr
         std::vector<double> xq;
         for (int i = 0; i < _nrDof; i++) {
@@ -44,8 +64,10 @@ struct F : public DifferentiableFunction
         }
         for (auto task : _tasks) {
             double err;
-            rbd::MultiBodyConfig mbc = xToMBC(xq);
-            //cout << " value check" << endl;
+            rbd::MultiBodyConfig mbc(_mb);
+            xToMBC(xq, mbc);
+            cout << " value check" << endl;
+            cout << " mbc joint size is " << mbc.q.size() << endl;
             //for (auto itr = mbc.q.begin(); itr != mbc.q.end(); itr++) {
             //    for (auto itr2 = itr->begin(); itr2 != itr->end(); itr2++) {
             //        cout << *itr2 << ", ";
@@ -56,6 +78,7 @@ struct F : public DifferentiableFunction
                 err = task.second->g(_mb, mbc).squaredNorm() * task.first;
             }
             else if (task.second->_type == "BodyTask") {
+                cout << "fk bodytask compute" << endl;
                 rbd::forwardKinematics(_mb, mbc); // For bodyPosW
                 rbd::forwardVelocity(_mb, mbc); // For motionSubSpace
                 err = task.second->g(_mb, mbc).squaredNorm() * task.first;
@@ -79,6 +102,7 @@ struct F : public DifferentiableFunction
 
     void impl_gradient (gradient_ref grad, const_argument_ref x, size_type) const
     {
+        cout << "impl_gradient" << endl;
         //grad << x[0], x[1], x[2], x[3]; 
         //calc by using task-ptr
         std::vector<double> xq;
@@ -88,13 +112,16 @@ struct F : public DifferentiableFunction
         VectorXd all(_nrDof);
         for (auto task : _tasks) {
             VectorXd diff(_nrDof);
-            rbd::MultiBodyConfig mbc = xToMBC(xq);
+            rbd::MultiBodyConfig mbc(_mb); 
+            xToMBC(xq, mbc);
             // pre-prosess
             if (task.second->_type == "PostureTask") {
                 diff = task.second->g(_mb, mbc)* task.first * 2;//g size is different!
                 //if there are some joint except rev, prism and spherecal, this code has problem
             }
             else if (task.second->_type == "BodyTask") {
+                cout << "fk bodytask grad " << endl;
+                cout << "mbc q size is " << mbc.q.size() << endl;
                 rbd::forwardKinematics(_mb, mbc); // For bodyPosW
                 rbd::forwardVelocity(_mb, mbc); // For motionSubSpace
                 diff = task.second->J(_mb, mbc).transpose() * 
@@ -125,18 +152,51 @@ struct F : public DifferentiableFunction
     //         0, 0, 0, 1; 
     //}
 
-    rbd::MultiBodyConfig xToMBC(std::vector<double> xq) const
+public:
+    void xToMBC(std::vector<double> xq, rbd::MultiBodyConfig& mbc) const
     {
-        rbd::MultiBodyConfig mbc(_mb);
+        cout << "xToMBC" << endl;
+        //Consider fixed-joint in mbc.q
+        //rbd::MultiBodyConfig mbc(_mb);
         mbc.zero(_mb);
-        int count = 0;
-        for (auto itr = mbc.q.begin(); itr != mbc.q.end(); itr++) {
-            for (auto itr2 = itr->begin(); itr2 != itr->end(); itr2++) {
-                *itr2 = xq[count];
-                count++;
+        cout << "mbc.q size is " << mbc.q.size() << endl;
+        cout << "mb check : nrDof is" << _mb.nrDof() << endl;
+        //int count = 0;
+        //for (auto itr = mbc.q.begin(); itr != mbc.q.end(); itr++) {
+        //    for (auto itr2 = itr->begin(); itr2 != itr->end(); itr2++) {
+        //        *itr2 = xq[count];
+        //        count++;
+        //    }
+        //}
+        //return mbc;
+        int jcount = 0;
+        int xcount = 0;
+        for (auto itr = _joints.begin(); itr != _joints.end(); ++itr) {
+            cout << "jcount, xcount " << jcount << ", " << xcount << endl;
+            int jIndex = _jointIndex[jcount];
+            if (itr->type() == rbd::Joint::Prism || itr->type() == rbd::Joint::Rev) {
+                mbc.q[jIndex][0] = xq[xcount];
+                xcount++;
             }
+            else if (itr->type() == rbd::Joint::Spherical) {
+                mbc.q[jIndex][0] = xq[xcount];
+                mbc.q[jIndex][1] = xq[xcount+1];
+                mbc.q[jIndex][2] = xq[xcount+2];
+                mbc.q[jIndex][3] = xq[xcount+3];
+                xcount+=4;
+            }
+
+            jcount++;
         }
-        return mbc;
+        cout << "xToMBC q size is " << mbc.q.size() << endl;
+    }
+    void xToMBC(argument_ref x, rbd::MultiBodyConfig& mbc) const
+    {
+        std::vector<double> xq;
+        for (int i = 0; i < _nrDof; i++) {
+            xq.push_back(x[i]);
+        }
+        xToMBC(xq, mbc);
     }
 
 
@@ -146,6 +206,8 @@ public:
     MultiTaskPtr _tasks;
     int _nrDof;
     rbd::MultiBody _mb;
+    std::vector<unsigned int> _jointIndex;
+    std::vector<rbd::Joint> _joints;
 };
 
 // Constraint Function, equality or inequality

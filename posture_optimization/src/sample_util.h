@@ -40,9 +40,30 @@ void MarkerArrayFromMBC(rbd::MultiBody mb, rbd::MultiBodyConfig mbc,
         mrk.pose.orientation.z = q.z();
         mrk.pose.orientation.w = -q.w();//Consistency for TF
         mrk.scale.x = 0.1; mrk.scale.y = 0.01; mrk.scale.z = 0.01;
-        mrk.color.r = 0.5; mrk.color.g = 0.0; mrk.color.b = 0.0; mrk.color.a = 0.5; 
+        mrk.color.r = 0.0; mrk.color.g = 0.5; mrk.color.b = 0.0; mrk.color.a = 0.5; 
         msg.markers.push_back(mrk);
 
         count++;
     }
+}
+
+void MarkerSet(sva::PTransformd x, visualization_msgs::Marker& msg,
+               int id_count = 0, 
+               std::string frame_id = "base_link")
+{
+    msg.header.stamp = ros::Time::now();
+    msg.header.frame_id = frame_id;
+    msg.id = id_count;
+    msg.type = visualization_msgs::Marker::ARROW;
+    msg.pose.position.x = x.translation()(0);
+    msg.pose.position.y = x.translation()(1);
+    msg.pose.position.z = x.translation()(2);
+    auto q = Eigen::Quaterniond(x.rotation());
+    msg.pose.orientation.x = q.x();
+    msg.pose.orientation.y = q.y();
+    msg.pose.orientation.z = q.z();
+    msg.pose.orientation.w = -q.w();//Consistency for TF
+    msg.scale.x = 0.2; msg.scale.y = 0.02; msg.scale.z = 0.02;
+    msg.color.r = 0.5; msg.color.g = 0.0; msg.color.b = 0.0; msg.color.a = 0.5; 
+    
 }

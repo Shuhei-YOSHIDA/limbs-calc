@@ -10,6 +10,7 @@ using namespace rbdyn_urdf;
 using namespace roboptim;
 
 Urdf robotData;
+sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/4), Vector3d(0.3, 0.1, 0.0));
 
 void optim()
 {
@@ -22,18 +23,18 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
     //rbd::MultiBody mb = robotData.mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
     //rbd::MultiBodyConfig mbc(mb);
     mbc.zero(mb);
+    cout << "sample 1 mbc.q size is " << mbc.q.size() << endl;
     rbd::forwardKinematics(mb, mbc);
     rbd::forwardVelocity(mb, mbc);
 
     //BodyTask
-    sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/4), Vector3d(0.3, 0.1, 0.0));
     TaskPtr bodytask(new BodyTask(mb, "r_wrist", X_O_T));
     //PostureTask
     TaskPtr posturetask(new PostureTask(mb, mbc));
     MultiTaskPtr tasks;
-    //tasks.push_back(pair<double, TaskPtr>(10000000, bodytask));
-    tasks.push_back(pair<double, TaskPtr>(10., bodytask));
-    //tasks.push_back(pair<double, TaskPtr>(1.0, posturetask));
+    tasks.push_back(pair<double, TaskPtr>(10000000, bodytask));
+    //tasks.push_back(pair<double, TaskPtr>(10., bodytask));
+    tasks.push_back(pair<double, TaskPtr>(1.0, posturetask));
 
 
 
@@ -92,6 +93,7 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
         {
             //Get the result.
             Result& result = boost::get<Result>(res);
+            f->xToMBC(result.x, mbc);
             //Display the result
             cout << "A solution has been found: " << endl
                  << result << endl;
@@ -101,6 +103,7 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
         {
             //Get the result
             ResultWithWarnings& result = boost::get<ResultWithWarnings>(res);
+            f->xToMBC(result.x, mbc);
             //Display the result
             cout << "A solution with warnings has been found: " << endl
                  << result << endl;
@@ -126,6 +129,7 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
 
     //get results
     rbd::forwardKinematics(mb, mbc);
+    rbd::forwardVelocity(mb, mbc);
     
     return true;
 }
@@ -158,6 +162,10 @@ int main(int argc, char** argv)
     while(res && ros::ok()) {
         JointStateFromMBC(mb, mbc, jmsg);
         MarkerArrayFromMBC(mb, mbc, amsg);
+        visualization_msgs::Marker msg;
+        MarkerSet(X_O_T, msg, amsg.markers[amsg.markers.size()-1].id+1);
+        msg.header.stamp = amsg.markers[0].header.stamp;
+        amsg.markers.push_back(msg);
         j_pub.publish(jmsg);
         a_pub.publish(amsg);
 
