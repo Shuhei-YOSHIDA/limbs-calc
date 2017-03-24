@@ -12,31 +12,23 @@ using namespace roboptim;
 Urdf robotData;
 sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/4), Vector3d(0.3, 0.1, 0.0));
 
-void optim()
-{
-
-}
 
 //void sample1(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &amsg)
-bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
+bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbcin, rbd::MultiBodyConfig &mbcout)
 {
-    //rbd::MultiBody mb = robotData.mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
-    //rbd::MultiBodyConfig mbc(mb);
-    mbc.zero(mb);
-    cout << "sample 1 mbc.q size is " << mbc.q.size() << endl;
-    rbd::forwardKinematics(mb, mbc);
-    rbd::forwardVelocity(mb, mbc);
+    //To fill some components
+    mbcin.zero(mb);//set target posure as 0
+    rbd::forwardKinematics(mb, mbcin);
+    rbd::forwardVelocity(mb, mbcin);
 
     //BodyTask
     TaskPtr bodytask(new BodyTask(mb, "r_wrist", X_O_T));
     //PostureTask
-    TaskPtr posturetask(new PostureTask(mb, mbc));
+    TaskPtr posturetask(new PostureTask(mb, mbcin));
     MultiTaskPtr tasks;
     tasks.push_back(pair<double, TaskPtr>(10000000, bodytask));
     //tasks.push_back(pair<double, TaskPtr>(10., bodytask));
     tasks.push_back(pair<double, TaskPtr>(1.0, posturetask));
-
-
 
     //optimization
     typedef Solver<EigenMatrixDense> solver_t;
@@ -64,7 +56,7 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
     std::mt19937 mt(rnd());
     std::uniform_int_distribution<int> ranj(0,100);
     for (int i = 0; i < start.size(); i++) {
-        start[i] = ranj(mt)/100.0;
+        start[i] = ranj(mt)/100.0;//set rundom value as start configuration
     }
     pb.startingPoint() = start;
 
@@ -93,7 +85,7 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
         {
             //Get the result.
             Result& result = boost::get<Result>(res);
-            f->xToMBC(result.x, mbc);
+            f->xToMBC(result.x, mbcout);
             //Display the result
             cout << "A solution has been found: " << endl
                  << result << endl;
@@ -103,7 +95,7 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
         {
             //Get the result
             ResultWithWarnings& result = boost::get<ResultWithWarnings>(res);
-            f->xToMBC(result.x, mbc);
+            f->xToMBC(result.x, mbcout);
             //Display the result
             cout << "A solution with warnings has been found: " << endl
                  << result << endl;
@@ -128,8 +120,8 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbc)
     }
 
     //get results
-    rbd::forwardKinematics(mb, mbc);
-    rbd::forwardVelocity(mb, mbc);
+    rbd::forwardKinematics(mb, mbcout);
+    rbd::forwardVelocity(mb, mbcout);
     
     return true;
 }
@@ -155,13 +147,15 @@ int main(int argc, char** argv)
     ros::Publisher a_pub = n.advertise<visualization_msgs::MarkerArray>("markers", 1);
 
     rbd::MultiBody mb = robotData.mbg.makeMultiBody("base_link", rbd::Joint::Fixed);
-    rbd::MultiBodyConfig mbc(mb);
+    rbd::MultiBodyConfig mbcin(mb);
+    rbd::MultiBodyConfig mbcout(mb);
+
 
     //sample1(jmsg, amsg);
-    bool res = sample1(mb, mbc);
+    bool res = sample1(mb, mbcin, mbcout);
     while(res && ros::ok()) {
-        JointStateFromMBC(mb, mbc, jmsg);
-        MarkerArrayFromMBC(mb, mbc, amsg);
+        JointStateFromMBC(mb, mbcout, jmsg);
+        MarkerArrayFromMBC(mb, mbcin, amsg);//show target posture
         visualization_msgs::Marker msg;
         MarkerSet(X_O_T, msg, amsg.markers[amsg.markers.size()-1].id+1);
         msg.header.stamp = amsg.markers[0].header.stamp;
