@@ -13,7 +13,6 @@ Urdf robotData;
 sva::PTransformd X_O_T = sva::PTransformd(sva::RotY(M_PI/4), Vector3d(0.3, 0.1, 0.0));
 
 
-//void sample1(sensor_msgs::JointState &jmsg, visualization_msgs::MarkerArray &amsg)
 bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbcin, rbd::MultiBodyConfig &mbcout)
 {
     //To fill some components
@@ -27,7 +26,6 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbcin, rbd::MultiBodyConfi
     TaskPtr posturetask(new PostureTask(mb, mbcin));
     MultiTaskPtr tasks;
     tasks.push_back(pair<double, TaskPtr>(10000000, bodytask));
-    //tasks.push_back(pair<double, TaskPtr>(10., bodytask));
     tasks.push_back(pair<double, TaskPtr>(1.0, posturetask));
 
     //optimization
@@ -41,10 +39,9 @@ bool sample1(rbd::MultiBody mb, rbd::MultiBodyConfig &mbcin, rbd::MultiBodyConfi
     solver_t::problem_t pb(f);
 
     //Set bounds for all optimization parameters
-    //1. < x_i < 5. (x_i in[1.;5.])
     for (Function::size_type i = 0; i < pb.function().inputSize(); i++) {
         pb.argumentBounds()[i] = Function::makeInterval(-150.*M_PI/180., +150.*M_PI/180.);
-        //Take care of type of joints such as Free, spherical and prism
+        //Take care of type and order of joints such as Free, spherical and prism
         //and Inf can be used. 
     }
 
@@ -151,7 +148,6 @@ int main(int argc, char** argv)
     rbd::MultiBodyConfig mbcout(mb);
 
 
-    //sample1(jmsg, amsg);
     bool res = sample1(mb, mbcin, mbcout);
     while(res && ros::ok()) {
         JointStateFromMBC(mb, mbcout, jmsg);

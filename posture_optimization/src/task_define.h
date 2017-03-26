@@ -62,7 +62,7 @@ public:
         sva::PTransformd X_O_p = this->X_O_p(mbc);
         // Set transformation in Origin orientation frame
         sva::PTransformd X_O_p_0 = sva::PTransformd(X_O_p.rotation()).inv() * X_O_p;
-        MatrixXd jac_mat_dense = _jac.jacobian(mb, mbc, X_O_p_0); // おかしい？
+        MatrixXd jac_mat_dense = _jac.jacobian(mb, mbc, X_O_p_0);
         _jac.fullJacobian(mb, jac_mat_dense, _jac_mat_sparse);
         return _jac_mat_sparse;
     }
