@@ -135,10 +135,12 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(sample1 src/sample1.cpp)
+add_executable(sample2 src/sample2.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(sample1 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(sample2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(sample1
@@ -150,6 +152,15 @@ target_link_libraries(sample1
   ltdl
 )
 
+target_link_libraries(sample2
+  ${catkin_LIBRARIES}
+  RBDyn
+  RBDynUrdf
+  roboptim-core
+  roboptim-trajectory
+  roboptim-capsule
+  ltdl
+)
 #############
 ## Install ##
 #############
