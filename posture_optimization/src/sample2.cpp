@@ -3,8 +3,10 @@
 #include "sample_util.h"
 #include <RBDynUrdf/Reader.h> //github repository:jorisv/RBDynUrdf
 #include <RBDyn/FK.h>
+
 #include "problem_define.h"
 #include "capsule_set.h"
+#include "sch_set.h"
 #include <random>
 
 using namespace std;
@@ -12,7 +14,9 @@ using namespace rbdyn_urdf;
 using namespace roboptim;
 
 Urdf robotData;
-
+//1. urdf to rbdyn
+//2. urdf to optimized capsule
+//3. rbdyn to collision of capsules
 
 int main(int argc, char** argv)
 {

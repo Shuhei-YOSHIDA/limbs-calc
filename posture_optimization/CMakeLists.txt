@@ -160,6 +160,7 @@ target_link_libraries(sample2
   roboptim-trajectory
   roboptim-capsule
   ltdl
+  sch-core
 )
 #############
 ## Install ##

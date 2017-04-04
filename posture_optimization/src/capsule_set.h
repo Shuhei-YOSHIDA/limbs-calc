@@ -1,3 +1,4 @@
+#pragma once
 #include "roboptim/capsule/volume.hh"
 #include "roboptim/capsule/util.hh"
 #include "roboptim/capsule/fitter.hh"
@@ -109,3 +110,46 @@ void test1(visualization_msgs::MarkerArray &msg)
     Vector4d green = Vector4d(0., 0.5, 0., 0.6);
     capsuleMarker(resPoint1, resPoint2, resRadius, 3, msg, green);
 }
+
+void fittingCapsule(double xyz[3], double resParam[7])
+{
+    //For ease, set cubic for Sphere, Cylinder and Box
+    //Build a cubic polyhedron centered in (0,0,0)
+    polyhedron_t polyhedron;
+    value_type halfX = xyz[0];
+    value_type halfY = xyz[1];
+    value_type halfZ = xyz[2];
+    polyhedron.push_back (point_t (-halfX, -halfY, -halfZ));
+    polyhedron.push_back (point_t (-halfX, -halfY,  halfZ));
+    polyhedron.push_back (point_t (-halfX,  halfY, -halfZ));
+    polyhedron.push_back (point_t (-halfX,  halfY,  halfZ));
+    polyhedron.push_back (point_t ( halfX, -halfY, -halfZ));
+    polyhedron.push_back (point_t ( halfX, -halfY,  halfZ));
+    polyhedron.push_back (point_t ( halfX,  halfY, -halfZ));
+    polyhedron.push_back (point_t ( halfX,  halfY,  halfZ));
+
+    polyhedrons_t polyhedrons;
+    polyhedrons.push_back(polyhedron);
+
+    polyhedrons_t convexPolyhedrons;
+    computeConvexPolyhedron(polyhedrons, convexPolyhedrons);
+
+    Fitter fitter_cube(convexPolyhedrons);
+
+    point_t endPoint1 = point_t(0., 0., 0.);
+    point_t endPoint2 = point_t(0., 0., 0.);
+    value_type radius = 0.;
+    computeBoundingCapsulePolyhedron(convexPolyhedrons, 
+                                     endPoint1, endPoint2, radius);
+
+    argument_t initParam(7);
+    convertCapsuleToSolverParam(initParam, endPoint1, endPoint2, radius);
+
+    // Compute best fitting capsule
+    fitter_cube.computeBestFitCapsule(initParam);
+    argument_t solutionParam = fitter_cube.solutionParam();
+    for (int i = 0; i < 7; i++) resParam[i] = solutionParam[i];
+ 
+}
+
+
