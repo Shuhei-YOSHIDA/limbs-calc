@@ -1,8 +1,10 @@
 <launch>
-    <param name="robot_description" command="cat $(find romeo_description)/urdf/romeo_generated_urdf/romeo.urdf"/>
+    <!--<param name="robot_description" command="cat $(find romeo_description)/urdf/romeo_generated_urdf/romeo.urdf"/>-->
+    <param name="robot_description" command="$(find xacro)/xacro.py  '$(find turtlebot_description)/robots/kobuki_hexagons_kinect.urdf.xacro'"/>
     <node name="sample2" pkg="posture_optimization" type="sample2" output="screen" />
 
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen"/>
+    <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher"/>
 
     <node name="$(anon rviz)"  pkg="rviz" type="rviz" respawn="false" 
         args="-d $(find posture_optimization)/launch/sample2.rviz" output="screen">

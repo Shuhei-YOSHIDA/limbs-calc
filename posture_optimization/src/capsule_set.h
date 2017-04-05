@@ -19,7 +19,6 @@ void capsuleMarker(point_t p1, point_t p2, value_type radius,
     visualization_msgs::Marker cylinder, sph1, sph2;
     point_t pd = p1 - p2; pd = pd/pd.norm();
     Quaterniond q = Quaterniond::FromTwoVectors(pd, point_t(1., 0., 0.));
-    cout << q.w() << ", " << q.x() << ", " << q.y() << ", " << q.z() << ", " << endl;
     q = q*Quaterniond(AngleAxisd(M_PI/2.0, Vector3d::UnitY()));
     q = q.normalized();
     auto pos = 0.5*(p1 + p2);
@@ -41,7 +40,7 @@ void capsuleMarker(point_t p1, point_t p2, value_type radius,
     cylinder.pose.orientation.z = q.z();
     sph1.pose.orientation.w = sph2.pose.orientation.w = 1.;
     cylinder.scale.x = cylinder.scale.y = 2*radius;
-    cylinder.scale.z = (p1 - p2).squaredNorm();
+    cylinder.scale.z = (p1 - p2).norm();
     sph1.scale.x = sph1.scale.y = sph1.scale.z = 2*radius;
     sph2.scale.x = sph2.scale.y = sph2.scale.z = 2*radius;
     std_msgs::ColorRGBA color;
@@ -56,17 +55,51 @@ void capsuleMarker(point_t p1, point_t p2, value_type radius,
 void test1(visualization_msgs::MarkerArray &msg)
 {
     polyhedron_t polyhedron;
-    value_type halfLength = 0.5;
 
     //Build a cubic polyhedron centerd in (0,0,0)
-    polyhedron.push_back (point_t (-halfLength, -halfLength, -halfLength));
-    polyhedron.push_back (point_t (-halfLength, -halfLength, halfLength));
-    polyhedron.push_back (point_t (-halfLength, halfLength, -halfLength));
-    polyhedron.push_back (point_t (-halfLength, halfLength, halfLength));
-    polyhedron.push_back (point_t (halfLength, -halfLength, -halfLength));
-    polyhedron.push_back (point_t (halfLength, -halfLength, halfLength));
-    polyhedron.push_back (point_t (halfLength, halfLength, -halfLength));
-    polyhedron.push_back (point_t (halfLength, halfLength, halfLength));
+    value_type halfLength = 0.5;
+    //polyhedron.push_back (point_t (-halfLength, -halfLength, -halfLength));
+    //polyhedron.push_back (point_t (-halfLength, -halfLength, halfLength));
+    //polyhedron.push_back (point_t (-halfLength, halfLength, -halfLength));
+    //polyhedron.push_back (point_t (-halfLength, halfLength, halfLength));
+    //polyhedron.push_back (point_t (halfLength, -halfLength, -halfLength));
+    //polyhedron.push_back (point_t (halfLength, -halfLength, halfLength));
+    //polyhedron.push_back (point_t (halfLength, halfLength, -halfLength));
+    //polyhedron.push_back (point_t (halfLength, halfLength, halfLength));
+
+    // !! thin geometry makes capsule-volume big.
+    // thin box
+    //polyhedron.push_back (point_t (-halfLength, -halfLength, -halfLength*0.1));
+    //polyhedron.push_back (point_t (-halfLength, -halfLength, halfLength*0.1));
+    //polyhedron.push_back (point_t (-halfLength, halfLength, -halfLength*0.1));
+    //polyhedron.push_back (point_t (-halfLength, halfLength, halfLength*0.1));
+    //polyhedron.push_back (point_t (halfLength, -halfLength, -halfLength*0.1));
+    //polyhedron.push_back (point_t (halfLength, -halfLength, halfLength*0.1));
+    //polyhedron.push_back (point_t (halfLength, halfLength, -halfLength*0.1));
+    //polyhedron.push_back (point_t (halfLength, halfLength, halfLength*0.1));
+
+    // thin regular hexagonal prism
+    Vector3d axis(0,0,1);
+    int max = 6;
+    double ref = halfLength*sqrt(tan(M_PI/max)*tan(M_PI/max) + 1);
+    for (int i = 0; i < max; i++) {
+        auto rotz = AngleAxisd(2.*M_PI/max*i, axis);
+        //auto rotx = AngleAxisd(2.*M_PI, Vector3d(1,0,0));
+        //auto roty = AngleAxisd(2.*M_PI, Vector3d(0,1,0));
+        //pattern1
+        auto p0 = rotz * point_t(ref, 0, -halfLength*0.1);
+        auto p1 = rotz * point_t(ref, 0, +halfLength*0.1);
+        //pattern2
+        //auto p0 = rotx * rotz * point_t(ref, 0, -halfLength*0.1);
+        //auto p1 = rotx * rotz * point_t(ref, 0, +halfLength*0.1);
+        //pattern3
+        //auto p0 = roty * rotz * point_t(ref, 0, -halfLength*0.1);
+        //auto p1 = roty * rotz * point_t(ref, 0, +halfLength*0.1);
+        std::cout << "p0 " << p0 << std::endl;
+        std::cout << "p1 " << p1 << std::endl;
+        polyhedron.push_back(p0);
+        polyhedron.push_back(p1);
+    }
 
     polyhedrons_t polyhedrons;
     polyhedrons.push_back(polyhedron);
