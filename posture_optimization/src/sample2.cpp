@@ -103,10 +103,14 @@ int main(int argc, char** argv)
 
     //==========================================
     // capsule-test
+    //amsg.markers.clear();
+    //allowmsg.markers.clear();
     //test1(amsg);
 
     //==========================================
     // capsule-test2
+    //amsg.markers.clear();
+    //allowmsg.markers.clear();
     //test2(amsg, allowmsg);
 
     while (ros::ok()) {

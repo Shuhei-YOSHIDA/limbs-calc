@@ -168,8 +168,12 @@ void test2(visualization_msgs::MarkerArray &capsule,
     fittingCapsule(box1, param1);
     fittingCapsule(box2, param2);
 
+    //not in collision
     double pos1[3] = {+1.0, 0, 0};
     double pos2[3] = {-1.0, 0, 0};
+    //in collision
+    //double pos1[3] = {+0.5, 0, 0};
+    //double pos2[3] = {-0.5, 0, 0};
 
     S_Capsule cap1(Point3(pos1[0]+param1[0], 
                           pos1[1]+param1[1], 
