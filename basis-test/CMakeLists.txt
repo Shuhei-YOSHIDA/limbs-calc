@@ -168,6 +168,10 @@ target_link_libraries(joint ${catkin_LIBRARIES})
 add_executable(multibodygraph src/RBDyn/MultiBodyGraph.cpp)
 #target_link_libraries(multibodygraph ${catkin_LIBRARIES} /usr/local/lib/libRBDyn.so)
 target_link_libraries(multibodygraph ${catkin_LIBRARIES} /usr/lib/libRBDyn.so)
+
+add_executable(objects src/sch-core/objects.cpp)
+#target_link_libraries(objects ${catkin_LIBRARIES} sch-core)
+target_link_libraries(objects ${catkin_LIBRARIES} /usr/local/lib/libsch-core.so)
 #############
 ## Install ##
 #############
