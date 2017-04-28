@@ -55,9 +55,11 @@ int main(int argc, char **argv)
 
             //This will recompute the distance if the objects moved.
             CD_Pair *ptr = sObj(i, j);
+        //Warning: CD_Scene returns same object for sObj(i,j) and sObj(j, i)
+
             //ptr->getDistanceWithoutPenetrationDepth();
             Point3 p1_, p2_;
-            double dis = ptr->getClosestPoints(p1_, p2_);
+            double dis = ptr->getClosestPoints(p1_, p2_); //This valus is squared
             std::cout << objName[i] <<", " << i << ", " << p1_ << ", " << objName[j] << ", " << j << ", " << p2_ << ", dis " << dis << std::endl;
         }
     }
@@ -66,20 +68,30 @@ int main(int argc, char **argv)
     CD_Pair pair1(super1, super2);
     CD_Pair pair2(super1, super3);
     CD_Pair pair3(super2, super3);
+    CD_Pair pair1r(super2, super1);
+    CD_Pair pair2r(super3, super1);
+    CD_Pair pair3r(super3, super2);
 
     Point3 p11, p12;
-    std::cout << "dis 1 " << pair1.getDistance() << std::endl;
+    std::cout << "super1 super2 " << "dis 1: " << pair1.getDistance() << std::endl;
     pair1.getClosestPoints(p11, p12);
     std::cout << p11 << ", " << p12 << std::endl;
+    //std::cout << "dis 1r: " << pair1r.getDistance() << std::endl;
+    //pair1r.getClosestPoints(p11, p12);
+    //std::cout << p11 << ", " << p12 << std::endl;
 
     Point3 p21, p22;
-    std::cout << "dis 2 " << pair2.getDistance() << std::endl;
-    pair1.getClosestPoints(p21, p22);
+    std::cout << "super1 super3 " << "dis 2: " << pair2.getDistance() << std::endl;
+    pair2.getClosestPoints(p21, p22);
     std::cout << p21 << ", " << p22 << std::endl;
+    //std::cout << "dis 2r: " << pair2r.getDistance() << std::endl;
+    //pair2r.getClosestPoints(p21, p22);
+    //std::cout << p21 << ", " << p22 << std::endl;
+
 
     Point3 p31, p32;
-    std::cout << "dis 3 " << pair3.getDistance() << std::endl;
-    pair1.getClosestPoints(p32, p32);
+    std::cout << "super2 super3 " << "dis 3: " << pair3.getDistance() << std::endl;
+    pair3.getClosestPoints(p31, p32);
     std::cout << p31 << ", " << p32 << std::endl;
 
     std::cout << "end " << std::endl;
