@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
 )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -118,8 +118,6 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  /usr/include/eigen3/
-  /usr/local/include
 )
 
 ## Declare a C++ library
@@ -166,12 +164,10 @@ add_executable(joint src/RBDyn/Joint.cpp)
 target_link_libraries(joint ${catkin_LIBRARIES})
 
 add_executable(multibodygraph src/RBDyn/MultiBodyGraph.cpp)
-#target_link_libraries(multibodygraph ${catkin_LIBRARIES} /usr/local/lib/libRBDyn.so)
-target_link_libraries(multibodygraph ${catkin_LIBRARIES} /usr/lib/libRBDyn.so)
+target_link_libraries(multibodygraph ${catkin_LIBRARIES} RBDyn)
 
 add_executable(objects src/sch-core/objects.cpp)
-#target_link_libraries(objects ${catkin_LIBRARIES} sch-core)
-target_link_libraries(objects ${catkin_LIBRARIES} /usr/local/lib/libsch-core.so)
+target_link_libraries(objects ${catkin_LIBRARIES} sch-core)
 #############
 ## Install ##
 #############
