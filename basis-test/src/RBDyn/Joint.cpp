@@ -1,6 +1,6 @@
 #include "ros/ros.h"
-
 #include<RBDyn/Joint.h> 
+using namespace std;
 
 /*
  * jorisv/sva_rbdyn_presentationのサンプルとは違ってidが無い．nameのみ．
@@ -32,16 +32,21 @@ int main(int argc, char **argv)
     if (name == j1.name())
         std::cout << "name gotten:" << j1.name() << std::endl;
 
-    std::cout << "q vector size gotten:" << j1.params() << std::endl;
+    cout << "q vector size gotten:" << j1.params() << std::endl;
 
-    std::cout << "dof gotten:" << j1.dof() << std::endl;
+    cout << "dof gotten:" << j1.dof() << std::endl;
     
-    std::cout << "motion space matrix gotten:" << j1.motionSubspace() << std::endl;
+    cout << "motion space matrix gotten:" << endl;
+    cout << j1.motionSubspace() << std::endl;
 
     // transformation and velocity
     std::vector<double> q(j1.params()), alpha(j1.dof()), alphaDot(j1.dof());
+
+    cout << "pose of joint" << endl;
     std::cout << j1.pose(q) << std::endl; // X_j transformation matrix
+    cout << "motion vector of joint" << endl;
     std::cout << j1.motion(alpha) << std::endl;  // v_j motion vector
+    cout << "tangential acceleration of joint" << endl;
     std::cout << j1.tanAccel(alphaDot) << std::endl;  // tangential acceleration
 
     // initialization

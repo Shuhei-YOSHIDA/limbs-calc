@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  sensor_msgs
+  visualization_msgs
   cmake_modules
 )
 
@@ -119,6 +121,7 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  ${mc_rbdyn_urdf_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -166,6 +169,9 @@ target_link_libraries(joint ${catkin_LIBRARIES})
 
 add_executable(multibodygraph src/RBDyn/MultiBodyGraph.cpp)
 target_link_libraries(multibodygraph ${catkin_LIBRARIES} RBDyn)
+
+add_executable(jacobian src/RBDyn/Jacobian.cpp)
+target_link_libraries(jacobian ${catkin_LIBRARIES} RBDyn mc_rbdyn_urdf)
 
 add_executable(objects src/sch-core/objects.cpp)
 target_link_libraries(objects ${catkin_LIBRARIES} sch-core)
