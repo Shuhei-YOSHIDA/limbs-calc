@@ -97,7 +97,7 @@ void calcOperationability(rbd::MultiBody mb, sensor_msgs::JointState jmsg,
       m.pose.position.y = trans.translation()[1];
       m.pose.position.z = trans.translation()[2];
       auto q = Eigen::Quaterniond(Eigen::Matrix3d(svd.matrixU()));
-      m.pose.orientation.w = q.w() * -1;
+      m.pose.orientation.w = q.w();
       m.pose.orientation.x = q.x();
       m.pose.orientation.y = q.y();
       m.pose.orientation.z = q.z();
@@ -123,7 +123,7 @@ void calcOperationability(rbd::MultiBody mb, sensor_msgs::JointState jmsg,
       m.pose.position.y = trans.translation()[1];
       m.pose.position.z = trans.translation()[2];
       auto q = Eigen::Quaterniond(Eigen::Matrix3d(svd.matrixU()));
-      m.pose.orientation.w = q.w() * -1;
+      m.pose.orientation.w = q.w();
       m.pose.orientation.x = q.x();
       m.pose.orientation.y = q.y();
       m.pose.orientation.z = q.z();
