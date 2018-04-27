@@ -173,6 +173,9 @@ target_link_libraries(multibodygraph ${catkin_LIBRARIES} RBDyn)
 add_executable(jacobian src/RBDyn/Jacobian.cpp)
 target_link_libraries(jacobian ${catkin_LIBRARIES} RBDyn mc_rbdyn_urdf)
 
+add_executable(invdyn src/RBDyn/InvDyn.cpp)
+target_link_libraries(invdyn ${catkin_LIBRARIES} RBDyn mc_rbdyn_urdf)
+
 add_executable(objects src/sch-core/objects.cpp)
 target_link_libraries(objects ${catkin_LIBRARIES} sch-core)
 #############
