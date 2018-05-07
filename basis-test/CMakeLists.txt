@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   visualization_msgs
+  tf2_ros
   cmake_modules
 )
 
@@ -178,6 +179,9 @@ target_link_libraries(invdyn ${catkin_LIBRARIES} RBDyn mc_rbdyn_urdf)
 
 add_executable(fordyn src/RBDyn/ForDyn.cpp)
 target_link_libraries(fordyn ${catkin_LIBRARIES} RBDyn mc_rbdyn_urdf)
+
+add_executable(simulation src/RBDyn/Simulation.cpp)
+target_link_libraries(simulation ${catkin_LIBRARIES} RBDyn mc_rbdyn_urdf)
 
 add_executable(objects src/sch-core/objects.cpp)
 target_link_libraries(objects ${catkin_LIBRARIES} sch-core)
