@@ -1,6 +1,6 @@
 /**
- * @file InvDyn.cpp
- * @brief sandbox for inverse dynamics
+ * @file ForDyn.cpp
+ * @brief sandbox for forward dynamics
  */
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
@@ -10,7 +10,7 @@
 #include <RBDyn/MultiBodyGraph.h>
 #include <RBDyn/FK.h>
 #include <RBDyn/FV.h>
-#include <RBDyn/ID.h>
+#include <RBDyn/FD.h>
 #include <mc_rbdyn_urdf/urdf.h>
 
 using namespace std;
@@ -56,13 +56,13 @@ void jsCallback(const sensor_msgs::JointStateConstPtr &msg)
   rbd::forwardVelocity(G_mb, mbc);
   //cout << "gravity " << mbc.gravity << endl;
   mbc.gravity = Vector3d(0, 0, -9.81);
-  rbd::InverseDynamics ID(G_mb);
-  ID.inverseDynamics(G_mb, mbc);
-  cout << "Torque-- " << endl;;
+  rbd::ForwardDynamics FD(G_mb);
+  FD.forwardDynamics(G_mb, mbc);
+  cout << "alphaD-- " << endl;;
   //for (auto&& var : mbc.jointTorque)
-  for (int i = 0; i < mbc.jointTorque.size(); i++)
+  for (int i = 0; i < mbc.alphaD.size(); i++)
   {
-    auto var = mbc.jointTorque[i];
+    auto var = mbc.alphaD[i];
     cout << G_mb.joint(i).name() << ":";
     for (auto && var2 : var) cout << var2 <<", ";
     cout << endl;
