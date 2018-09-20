@@ -14,6 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   visualization_msgs
   urdf
+  eigen_conversions
+  tf2_ros
 )
 find_package(Eigen3 REQUIRED)
 
