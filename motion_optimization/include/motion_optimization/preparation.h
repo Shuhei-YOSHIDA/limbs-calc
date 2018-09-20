@@ -97,3 +97,24 @@ void broadcastRoot(PTransformd root_pose, string root_id="odom", string base_lin
 
   br.sendTransform(transformStamped);
 }
+
+// sch object is necessary for collision calc
+MultiBody makeEnv()
+{
+  MultiBodyGraph mbg;
+
+  double mass = 1.0;
+  Matrix3d I = Matrix3d::Identity();
+  Vector3d h = Vector3d::Zero();
+
+  RBInertiad rbi(mass, h, I);
+
+  Body b0(rbi, "A");
+
+  mbg.addBody(b0);
+
+  bool fixed = true;
+  MultiBody mb = mbg.makeMultiBody("A", fixed);
+
+  return mb;
+}
