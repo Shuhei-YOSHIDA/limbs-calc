@@ -19,7 +19,7 @@ using namespace mc_rbdyn_urdf;
 using namespace sensor_msgs;
 using namespace visualization_msgs;
 
-bool init(MultiBody& mb)
+bool init(MultiBody& mb, Limits& limits)
 {
   // Read ros parameter and prepair RobotConfiguration class
   string urdf_string;
@@ -35,8 +35,15 @@ bool init(MultiBody& mb)
   string baseLinkIn = "base_link";
   auto urdf_parser_res = rbdyn_from_urdf(urdf_string, fixed, filteredLinksIn, transformInertia, baseLinkIn);
   mb = urdf_parser_res.mb;
+  limits = urdf_parser_res.limits;
 
   return true;
+}
+
+bool init(MultiBody& mb)
+{
+  Limits limits;
+  return init(mb, limits);
 }
 
 void jointStateFromMBC(MultiBody mb, MultiBodyConfig mbc,
@@ -74,6 +81,20 @@ void markerSet(PTransformd marker_pose, Marker& msg,
   tf::quaternionEigenToMsg(q, msg.pose.orientation);
   msg.scale.x = 0.2; msg.scale.y = 0.02; msg.scale.z = 0.02;
   msg.color.r = 0.5; msg.color.g = 0.0; msg.color.b = 0.0; msg.color.a = 1.0;
+}
+
+Marker comMarkerSet(Vector3d com, int marker_id, string frame_id)
+{
+  Marker msg;
+  msg.header.stamp = ros::Time::now();
+  msg.header.frame_id = frame_id;
+  msg.id = marker_id;
+  msg.type = Marker::SPHERE;
+  tf::pointEigenToMsg(com, msg.pose.position);
+  msg.scale.x = 0.1; msg.scale.y = 0.1; msg.scale.z = 0.1;
+  msg.color.r = 0.0; msg.color.g = 0.3; msg.color.b = 0.9; msg.color.a = 1.0;
+
+  return msg;
 }
 
 void broadcastRoot(PTransformd root_pose, string root_id="odom", string base_link_id="base_link")

@@ -1,5 +1,6 @@
 /**
  * @file sample2.cpp
+ * @brief kinematic contact constraint
  */
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
@@ -105,10 +106,10 @@ int main(int argc, char** argv)
   ROS_INFO_STREAM("Task error: " << posTask1.eval().norm());
 
   /// qp::Contact[Acc/Speed/Pos]Constr is kinematic and equality constraint
-  //qp::ContactAccConstr contCstrAcc; // initial velocity should be zero
-  //qp::ContactSpeedConstr contCstrSpeed(0.001);
-  qp::ContactPosConstr contCstrPos(0.001);
-  contCstrPos.addToSolver(solver);
+  //qp::ContactAccConstr contCstrAcc; // initial velocity must be zero
+  qp::ContactSpeedConstr contCstrSpeed(0.001);
+  //qp::ContactPosConstr contCstrPos(0.001); // initial position error should be zero
+  contCstrSpeed.addToSolver(solver);
   solver.nrVars(mbs, contVec, {/*vector<BilateralContact>*/});
   solver.updateConstrSize();
 
