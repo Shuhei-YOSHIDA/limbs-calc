@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 
   while(ros::ok())
   {
-    auto mbc = mbcEI;;
+    auto mbc = mbcEI;
     for (int i = 0; i < iterations; i++)
     {
       rbd::forwardKinematics(G_mb, mbc);
@@ -115,6 +115,19 @@ int main(int argc, char **argv)
       br.sendTransform(tfs);
 
       loop.sleep();
+      //auto f_ = mbc.force[G_mb.bodyIndexByName("base_link")];
+      //cout << "force: " << endl << f_.force() << endl;
+      //cout << "couple: " << endl << f_.couple() << endl;
+      //auto v_ = mbc.bodyVelW[G_mb.bodyIndexByName("base_link")];
+      //cout << "linear: " << endl << v_.linear() << endl;
+      //cout << "angular: " << endl << v_.angular() << endl;
+      //auto alphaD = mbc.alphaD[G_mb.jointIndexByName("Root")];
+      //for (auto&& a : alphaD) cout << a << ", "; cout << endl;
+      //auto torque = mbc.jointTorque[G_mb.jointIndexByName("Root")];
+      //for (auto&& t : torque) cout << t << ", "; cout << endl;
+      //auto j_ = mbc.jointVelocity[G_mb.bodyIndexByName("base_link")];
+      //cout << "linear: " << endl << j_.linear() << endl;
+      //cout << "angular: " << endl << j_.angular() << endl;
     }
     ROS_INFO("rebirth");
   }

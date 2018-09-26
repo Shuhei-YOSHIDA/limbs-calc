@@ -55,7 +55,7 @@ void jsCallback(const sensor_msgs::JointStateConstPtr &msg)
   rbd::forwardKinematics(G_mb, mbc);
   rbd::forwardVelocity(G_mb, mbc);
   //cout << "gravity " << mbc.gravity << endl;
-  mbc.gravity = Vector3d(0, 0, -9.81);
+  mbc.gravity = Vector3d(0, 0, +9.81);
   rbd::InverseDynamics ID(G_mb);
   ID.inverseDynamics(G_mb, mbc);
   cout << "Torque-- " << endl;;
