@@ -97,7 +97,7 @@ int main(int argc, char** argv)
 
   auto pos0 = mbc.bodyPosW[mb.bodyIndexByName("base_link")].translation();
   qp::PositionTask posTask0(mbs, 0, "base_link", pos0);
-  qp::SetPointTask posTaskSp0(mbs, 0, &posTask0, 10., 1);
+  qp::SetPointTask posTaskSp0(mbs, 0, &posTask0, 1., 1);
   solver.addTask(&posTaskSp0);
 
   qp::OrientationTask oriTask0(mbs, 0, "base_link", Matrix3d::Identity());
@@ -146,7 +146,6 @@ int main(int argc, char** argv)
   for (int i = 0; i < ql.size(); i++)
   {
     double q_lo, q_up, qv_lo, qv_up;
-    //if (mbs[0].joint(i).type() == Joint::Type::Rev)
     if (mbs[0].joint(i).dof() == 1)
     {
       string name = mbs[0].joint(i).name();
@@ -178,6 +177,15 @@ int main(int argc, char** argv)
   }
   qp::DamperJointLimitsConstr dampJointConstr(mbs, 0, {ql, qu}, {qlvel, quvel}, 0.1, 0.01, 0.5, 0.001);
   dampJointConstr.addToSolver(solver);
+
+
+  cout << "initial com: " << computeCoM(mb, mbcs[0]).transpose() << endl;
+  qp::CoMIncPlaneConstr comPlaneConstr(mbs, 0, 0.001);
+  comPlaneConstr.addToSolver(solver);
+  comPlaneConstr.addPlane(10, Vector3d(1, 0, 0), 0.0, 0.15, 0.1, 0, 0.); // x dir of com
+  comPlaneConstr.addPlane(20, Vector3d(-1, 0, 0), 0.0, 0.15, 0.1, 0, 0.); // -x dir of com
+  comPlaneConstr.updateNrPlanes();
+
 
   solver.nrVars(mbs, contVec, {/*vector<BilateralContact>*/});
   solver.updateConstrSize();
@@ -245,8 +253,8 @@ int main(int argc, char** argv)
     //  for (auto&& t : dof_torque[j]) cout << t << ", "; cout << endl;
     //}
     
-    cout << "lambdas======" << endl;
-    cout << solver.lambdaVec() << endl;
+    //cout << "lambdas======" << endl;
+    //cout << solver.lambdaVec() << endl;
 
     auto stamp = ros::Time::now();
     js_array[i].header.stamp = stamp;
@@ -254,6 +262,8 @@ int main(int argc, char** argv)
     broadcastRoot(root_pose_array[i]);
     loop.sleep();
   }
+
+  ros::Duration(1).sleep();
 
   while(ros::ok())
   {
