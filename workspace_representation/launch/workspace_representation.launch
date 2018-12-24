@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="robot_description" command="cat $(find romeo_description)/urdf/romeo_generated_urdf/romeo.urdf"/>
+
+  <node name="workspace_representation" pkg="workspace_representation" type="workspace_representation_node" output="screen"/>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find workspace_representation)/launch/workspace_representation.rviz"/>
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+</launch>
