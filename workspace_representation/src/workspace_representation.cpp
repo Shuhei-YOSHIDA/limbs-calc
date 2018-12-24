@@ -11,6 +11,7 @@
 //#include <pcl/point_types.h>
 #include <RBDyn/FK.h>
 #include "workspace_representation/preparation.h"
+#include "workspace_representation/workspace_database.h"
 #include <SpaceVecAlg/SpaceVecAlg>
 #include <RBDyn/EulerIntegration.h>
 #include <RBDyn/FK.h>
@@ -58,18 +59,6 @@ int main(int argc, char** argv)
   PointCloud<PointXYZ> cloud;
   for (int i = 0; i < max_trial; i++)
   {
-    //for (auto&& joint : mb.joints())
-    //{
-    //  if (joint.name() == "Root") continue;
-    //  if (joint.type() != Joint::Type::Rev) continue;
-    //  vector<double> qj;
-    //  for (int j = 0; j < joint.dof(); j++)
-    //  {
-    //    double x = r_rand(mt);
-    //    qj.push_back(x);
-    //  }
-    //  mbc.q[mb.jointIndexByName(joint.name())] = qj;
-    //}
     for (int j = 1; j < mbc.q.size(); j++)
     {
       if (mb.joint(j).type() != Joint::Type::Rev) continue;
@@ -88,7 +77,11 @@ int main(int argc, char** argv)
   cout << "finished " << max_trial << " number calculation" << endl;
   cout << elapsed << " ms was elapsed" << endl;
 
+  PointCloud<PointXYZ>::Ptr voxel_cloud (new PointCloud<PointXYZ>());
+  makeOctreePointCloud(cloud.makeShared(), voxel_cloud);
+
   Publisher point_pub = nh.advertise<sensor_msgs::PointCloud2>("point_ws", 1);
+  Publisher voxel_pub = nh.advertise<sensor_msgs::PointCloud2>("voxel_ws", 1);
   ros::Rate loop(100);
   JointState js_msg;
   auto mbczero = mbc;
@@ -101,7 +94,9 @@ int main(int argc, char** argv)
     h.stamp = ros::Time::now();
     h.frame_id = "odom";
     cloud.header = pcl_conversions::toPCL(h);
+    voxel_cloud->header = pcl_conversions::toPCL(h);
     point_pub.publish(cloud);
+    voxel_pub.publish(voxel_cloud);
     js_msg.header.stamp = ros::Time::now();
     js_pub.publish(js_msg);
     loop.sleep();
