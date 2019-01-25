@@ -8,8 +8,8 @@
     </node>
     -->
 
-    <node name="calc_robot3" pkg="posture-generator" type="calcRobot3" output="screen" />
+    <node name="calc_robot3" pkg="ik_methods" type="calcRobot3" output="screen" />
     <node name="$(anon rviz)"  pkg="rviz" type="rviz" respawn="false" 
-        args="-d $(find posture-generator)/launch/sample.rviz" output="screen">
+        args="-d $(find ik_methods)/launch/sample.rviz" output="screen">
     </node>
 </launch>

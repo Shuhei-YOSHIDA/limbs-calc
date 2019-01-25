@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(posture-generator)
+project(ik_methods)
 set(CMAKE_BUILD_TYPE Debug)
 
 ## Find catkin macros and libraries
@@ -107,7 +107,7 @@ find_package(Eigen3 REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES posture-generator
+#  LIBRARIES ik_methods
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -125,14 +125,14 @@ include_directories(
 )
 
 ## Declare a C++ library
-# add_library(posture-generator
-#   src/${PROJECT_NAME}/posture-generator.cpp
+# add_library(ik_methods
+#   src/${PROJECT_NAME}/ik_methods.cpp
 # )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(posture-generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(ik_methods ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 add_executable(calcRobot src/calcFromURDF.cpp)
@@ -175,7 +175,7 @@ target_link_libraries(calcRobot3
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS posture-generator posture-generator_node
+# install(TARGETS ik_methods ik_methods_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -200,7 +200,7 @@ target_link_libraries(calcRobot3
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_posture-generator.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_ik_methods.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

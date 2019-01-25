@@ -1,4 +1,4 @@
 <launch>
     <param name="robot_description" command="cat $(find romeo_description)/urdf/romeo_generated_urdf/romeo.urdf"/>
-    <node name="calc_robot" pkg="posture-generator" type="calcRobot" output="screen" />
+    <node name="calc_robot" pkg="ik_methods" type="calcRobot" output="screen" />
 </launch>

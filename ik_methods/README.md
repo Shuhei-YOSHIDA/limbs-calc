@@ -1,4 +1,4 @@
-# posture-generator
+# ik_methods
 Example of kinematics by RBDyn and ROS
 
 ## model
