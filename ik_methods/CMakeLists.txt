@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   sensor_msgs
   visualization_msgs
+  eigen_conversions
+  tf2_ros
 )
 
 find_package(Eigen3 REQUIRED)
@@ -138,12 +140,14 @@ include_directories(
 add_executable(calcRobot src/calcFromURDF.cpp)
 add_executable(calcRobot2 src/calcFromURDF2.cpp)
 add_executable(calcRobot3 src/calcFromURDF3.cpp)
+add_executable(calcRobot4 src/ik_methods4.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(calcRobot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(calcRobot2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(calcRobot3 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(calcRobot4 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(calcRobot
@@ -159,6 +163,11 @@ target_link_libraries(calcRobot2
 target_link_libraries(calcRobot3
   ${catkin_LIBRARIES}
   RBDyn
+)
+target_link_libraries(calcRobot4
+  ${catkin_LIBRARIES}
+  RBDyn
+  mc_rbdyn_urdf
 )
 #############
 ## Install ##
