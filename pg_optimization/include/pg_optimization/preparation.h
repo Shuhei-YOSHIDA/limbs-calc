@@ -19,7 +19,7 @@ using namespace mc_rbdyn_urdf;
 using namespace sensor_msgs;
 using namespace visualization_msgs;
 
-bool init(MultiBody& mb, Limits& limits, string base_link_name="base_link", bool isFixed=false)
+bool init(MultiBody& mb, Limits& limits, MultiBodyGraph& mbg, string base_link_name="base_link", bool isFixed=false)
 {
   // Read ros parameter and prepair RobotConfiguration class
   string urdf_string;
@@ -41,7 +41,8 @@ bool init(MultiBody& mb, Limits& limits, string base_link_name="base_link", bool
 bool init(MultiBody& mb)
 {
   Limits limits;
-  return init(mb, limits);
+  MultiBodyGraph mbg;
+  return init(mb, limits, mbg);
 }
 
 void jointStateFromMBC(MultiBody mb, MultiBodyConfig mbc,
