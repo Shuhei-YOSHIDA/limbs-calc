@@ -97,7 +97,7 @@ int main(int argc, char** argv)
   while (ros::ok())
   {
     JointState js_msg;
-    jointStateFromMBC(mb, mbc, js_msg);
+    jointStateFromMBC(mb, mbc_res, js_msg);
     js_pub.publish(js_msg);
     broadcastRoot(mbc.bodyPosW[mb.bodyIndexByName("base_link")], "odom", "base_link");
     loop.sleep();
