@@ -34,6 +34,7 @@ bool init(MultiBody& mb, Limits& limits, MultiBodyGraph& mbg, string base_link_n
   auto urdf_parser_res = rbdyn_from_urdf(urdf_string, isFixed, filteredLinksIn, transformInertia, base_link_name);
   mb = urdf_parser_res.mb;
   limits = urdf_parser_res.limits;
+  mbg = urdf_parser_res.mbg;
 
   return true;
 }
