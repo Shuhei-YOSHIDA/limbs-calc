@@ -36,7 +36,8 @@ int main(int argc, char** argv)
 
   MultiBody mb;
   Limits limits;
-  if(!init(mb, limits, "l_sole", true)) return -1;
+  MultiBodyGraph mbg;
+  if(!init(mb, limits, mbg, "l_sole")) return -1;
   MultiBodyConfig mbc(mb);
   mbc.zero(mb);
   // gravity
